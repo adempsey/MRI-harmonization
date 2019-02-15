@@ -6,9 +6,9 @@ class State():
     def __init__(self, size, move_range):
         self.image = np.zeros(size,dtype=np.float32)
         self.move_range = move_range
-    
+
     def reset(self, x, n):
-        self.image = x+n
+        self.image = x#+n
         size = self.image.shape
         prev_state = np.zeros((size[0],64,size[2],size[3]),dtype=np.float32)
         self.tensor = np.concatenate((self.image, prev_state), axis=1)
@@ -45,7 +45,7 @@ class State():
                 box[i,0] = cv2.boxFilter(self.image[i,0], ddepth=-1, ksize=(5,5))
             #if np.sum(act[i]==self.move_range+3) > 0:
             #    guided[i,0] = cv2.ximgproc.guidedFilter(self.image[i,0], self.image[i,0], radius=2, eps=0.01)
-        
+
         self.image = moved_image
         self.image = np.where(act[:,np.newaxis,:,:]==self.move_range, gaussian, self.image)
         self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+1, bilateral, self.image)

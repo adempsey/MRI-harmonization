@@ -11,10 +11,11 @@ import os
 from pixelwise_a3c import *
 
 #_/_/_/ paths _/_/_/
-TRAINING_DATA_PATH          = "../training_BSD68.txt"
-TESTING_DATA_PATH           = "../testing.txt"
+TRAINING_DATA_PATH          = os.path.join('..','adni','train')#"../training_BSD68.txt"
+TESTING_DATA_PATH           = os.path.join('..','adni','train')
+# TESTING_DATA_PATH           = "../testing.txt"
 IMAGE_DIR_PATH              = "../"
-SAVE_PATH            = "./model/denoise_myfcn_"
+SAVE_PATH            = "./model/denoise_myfcn_2d_"
 
 #_/_/_/ training parameters _/_/_/
 LEARNING_RATE    = 0.001
@@ -41,7 +42,7 @@ def test(loader, agent, fout):
     test_data_size = MiniBatchLoader.count_paths(TESTING_DATA_PATH)
     current_state = State.State((TEST_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
     for i in range(0, test_data_size, TEST_BATCH_SIZE):
-        raw_x = loader.load_testing_data(np.array(range(i, i+TEST_BATCH_SIZE)))
+        raw_x, raw_y = loader.load_testing_data(np.array(range(i, i+TEST_BATCH_SIZE)))
         raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/255
         current_state.reset(raw_x,raw_n)
         reward = np.zeros(raw_x.shape, raw_x.dtype)*255
@@ -50,7 +51,7 @@ def test(loader, agent, fout):
             previous_image = current_state.image.copy()
             action, inner_state = agent.act(current_state.tensor)
             current_state.step(action, inner_state)
-            reward = np.square(raw_x - previous_image)*255 - np.square(raw_x - current_state.image)*255
+            reward = np.square(raw_y - previous_image)*255 - np.square(raw_y - current_state.image)*255
             sum_reward += np.mean(reward)*np.power(GAMMA,t)
 
         agent.stop_episode()
@@ -102,9 +103,7 @@ def main(fout):
         sys.stdout.flush()
         # load images
         r = indices[i:i+TRAIN_BATCH_SIZE]
-        raw_x = mini_batch_loader.load_training_data(r)
-        print('batch size', TRAIN_BATCH_SIZE)
-        print('raw_x.shape', raw_x.shape)  
+        raw_x, raw_y = mini_batch_loader.load_training_data(r)
         # generate noise
         raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/255
         # initialize the current state and reward
@@ -116,7 +115,8 @@ def main(fout):
             previous_image = current_state.image.copy()
             action, inner_state = agent.act_and_train(current_state.tensor, reward)
             current_state.step(action, inner_state)
-            reward = np.square(raw_x - previous_image)*255 - np.square(raw_x - current_state.image)*255
+            reward = np.square(raw_y - previous_image)*255 - np.square(raw_y - current_state.image)*255
+            # reward = np.square(raw_x - previous_image)*255 - np.square(raw_x - current_state.image)*255
             sum_reward += np.mean(reward)*np.power(GAMMA,t)
 
         agent.stop_episode_and_train(current_state.tensor, reward, True)
