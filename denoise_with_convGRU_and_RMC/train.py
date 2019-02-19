@@ -21,8 +21,8 @@ SAVE_PATH            = "./model/denoise_myfcn_2d_"
 LEARNING_RATE    = 0.001
 TRAIN_BATCH_SIZE = 64
 TEST_BATCH_SIZE  = 1 #must be 1
-N_EPISODES           = 1000
-EPISODE_LEN = 5
+N_EPISODES           = 5000
+EPISODE_LEN = 30#5
 SNAPSHOT_EPISODES  = 100
 TEST_EPISODES = 100
 GAMMA = 0.95 # discount factor
@@ -30,9 +30,9 @@ GAMMA = 0.95 # discount factor
 #noise setting
 MEAN = 0
 SIGMA = 80
-N_ACTIONS = 9
+N_ACTIONS = 3#9
 MOVE_RANGE = 3 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
-CROP_SIZE = 70
+CROP_SIZE = 15#70
 
 GPU_ID = 0
 

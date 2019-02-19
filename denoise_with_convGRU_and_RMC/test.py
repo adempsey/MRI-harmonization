@@ -13,7 +13,7 @@ from pixelwise_a3c import *
 #_/_/_/ paths _/_/_/
 TRAINING_DATA_PATH          = os.path.join('..','adni','train')
 # TRAINING_DATA_PATH          = "../training_BSD68.txt"
-TESTING_DATA_PATH           = os.path.join('..','adni','train')
+TESTING_DATA_PATH           = os.path.join('..','adni','test')
 # TESTING_DATA_PATH           = "../testing_1.txt"
 IMAGE_DIR_PATH              = "../"
 SAVE_PATH            = "./model/denoise_myfcn_2d_"
@@ -23,16 +23,16 @@ LEARNING_RATE    = 0.001
 TRAIN_BATCH_SIZE = 64
 TEST_BATCH_SIZE  = 1 #must be 1
 N_EPISODES           = 1000#30000
-EPISODE_LEN = 5
+EPISODE_LEN = 30#5
 GAMMA = 0.95 # discount factor
 
 #noise setting
 MEAN = 0
 SIGMA = 80
 
-N_ACTIONS = 9
+N_ACTIONS = 3#9
 MOVE_RANGE = 3 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
-CROP_SIZE = 70
+CROP_SIZE = 30#70
 
 GPU_ID = 0
 
@@ -53,37 +53,37 @@ def test(loader, agent, fout):
             action, inner_state = agent.act(current_state.tensor)
             actionMap = np.stack((action,)*3, axis=-1).squeeze()
 
-            # def actionToColor(a):
-            #     if a[0] == 0:
-            #         return np.array([0, 0, 255])
-            #     if a[0] == 1:
-            #         return np.array([0, 255, 0])
-            #     if a[0] == 2:
-            #         return np.array([0, 0, 0])
-            #     if a[0] == 3:
-            #         return np.array([255, 0, 0])
-            #     if a[0] == 4:
-            #         return np.array([255, 255, 255])
-            #     if a[0] == 5:
-            #         return np.array([255, 255, 0])
-            #     if a[0] == 6:
-            #         return np.array([0, 128, 128])
-            #     if a[0] == 7:
-            #         return np.array([128, 0, 128])
-            #     if a[0] == 8:
-            #         return np.array([0, 128, 255])
+            def actionToColor(a):
+                if a[0] == 0:
+                    return np.array([255, 255, 255])
+                if a[0] == 1:
+                    return np.array([128, 128, 128])
+                if a[0] == 2:
+                    return np.array([0, 0, 0])
+                if a[0] == 3:
+                    return np.array([255, 0, 0])
+                if a[0] == 4:
+                    return np.array([255, 255, 255])
+                if a[0] == 5:
+                    return np.array([255, 255, 0])
+                if a[0] == 6:
+                    return np.array([0, 128, 128])
+                if a[0] == 7:
+                    return np.array([128, 0, 128])
+                if a[0] == 8:
+                    return np.array([0, 128, 255])
 
-            # actionMap = np.apply_along_axis(actionToColor, 2, actionMap)
+            actionMap = np.apply_along_axis(actionToColor, 2, actionMap)
             current_state.step(action, inner_state)
             reward = np.square(raw_y - previous_image)*255 - np.square(raw_y - current_state.image)*255
             sum_reward += np.mean(reward)*np.power(GAMMA,t)
 
-            # p = np.maximum(0,current_state.image)
-            # p = np.minimum(1,p)
-            # p = (p[0]*255+0.5).astype(np.uint8)
-            # p = np.transpose(p,(1,2,0))
-            # cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_output.png',p)
-            # cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_action.png',actionMap)
+            p = np.maximum(0,current_state.image)
+            p = np.minimum(1,p)
+            p = (p[0]*255+0.5).astype(np.uint8)
+            p = np.transpose(p,(1,2,0))
+            cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_output.png',p)
+            cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_action.png',actionMap)
 
         agent.stop_episode()
 

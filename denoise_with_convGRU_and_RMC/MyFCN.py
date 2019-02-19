@@ -10,7 +10,7 @@ import chainerrl
 from chainerrl.agents import a3c
 
 class MyFcn_trained(chainer.Chain, a3c.A3CModel):
- 
+
     def __init__(self, n_actions):
         super(MyFcn_trained, self).__init__(
             conv1=L.Convolution2D( 1, 64, 3, stride=1, pad=1, nobias=False, initialW=None, initial_bias=None),
@@ -49,13 +49,13 @@ class DilatedConvBlock(chainer.Chain):
 
 
 class MyFcn(chainer.Chain, a3c.A3CModel):
- 
+
     def __init__(self, n_actions):
         w = chainer.initializers.HeNormal()
         wI = np.zeros((1,1,33,33))
         wI[:,:,16,16] = 1
         net = MyFcn_trained(n_actions)
-        chainer.serializers.load_npz('../denoise_with_convGRU/model/pretrained_15.npz', net)
+        # chainer.serializers.load_npz('../denoise_with_convGRU/model/pretrained_15.npz', net)
         super(MyFcn, self).__init__(
             conv1=L.Convolution2D( 1, 64, 3, stride=1, pad=1, nobias=False, initialW=net.conv1.W.data, initial_bias=net.conv1.b.data),
             diconv2=DilatedConvBlock(2, net.diconv2.diconv.W.data, net.diconv2.diconv.b.data),
@@ -76,9 +76,9 @@ class MyFcn(chainer.Chain, a3c.A3CModel):
             conv_R=L.Convolution2D( 1, 1, 33, stride=1, pad=16, nobias=True, initialW=wI),
         )
         self.train = True
- 
+
     def pi_and_v(self, x):
-         
+
         h = F.relu(self.conv1(x[:,0:1,:,:]))
         h = self.diconv2(h)
         h = self.diconv3(h)
@@ -95,7 +95,7 @@ class MyFcn(chainer.Chain, a3c.A3CModel):
         h_V = self.diconv5_V(h)
         h_V = self.diconv6_V(h_V)
         vout = self.conv7_V(h_V)
-       
+
         return pout, vout, h_t
 
     def conv_smooth(self, x):

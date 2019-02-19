@@ -6,7 +6,7 @@ class State():
     def __init__(self, size, move_range):
         self.image = np.zeros(size,dtype=np.float32)
         self.move_range = move_range
-    
+
     def reset(self, x, n):
         self.image = x+n
 
@@ -35,7 +35,7 @@ class State():
                 bilateral2[i,0] = cv2.bilateralFilter(self.image[i,0], d=5, sigmaColor=1.0, sigmaSpace=5)
             if np.sum(act[i]==self.move_range+5) > 0:
                 box[i,0] = cv2.boxFilter(self.image[i,0], ddepth=-1, ksize=(5,5))
-        
+
         self.image = moved_image
         self.image = np.where(act[:,np.newaxis,:,:]==self.move_range, gaussian, self.image)
         self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+1, bilateral, self.image)
@@ -43,4 +43,3 @@ class State():
         self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+3, gaussian2, self.image)
         self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+4, bilateral2, self.image)
         self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+5, box, self.image)
-

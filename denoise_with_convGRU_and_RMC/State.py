@@ -47,12 +47,12 @@ class State():
             #    guided[i,0] = cv2.ximgproc.guidedFilter(self.image[i,0], self.image[i,0], radius=2, eps=0.01)
 
         self.image = moved_image
-        self.image = np.where(act[:,np.newaxis,:,:]==self.move_range, gaussian, self.image)
-        self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+1, bilateral, self.image)
-        self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+2, median, self.image)
-        self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+3, gaussian2, self.image)
-        self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+4, bilateral2, self.image)
-        self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+5, box, self.image)
+        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range, gaussian, self.image)
+        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+1, bilateral, self.image)
+        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+2, median, self.image)
+        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+3, gaussian2, self.image)
+        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+4, bilateral2, self.image)
+        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+5, box, self.image)
         #self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+3, guided, self.image)
 
         self.tensor[:,:self.image.shape[1],:,:] = self.image
