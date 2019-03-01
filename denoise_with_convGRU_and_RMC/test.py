@@ -9,14 +9,15 @@ import chainerrl
 import State
 import os
 from pixelwise_a3c import *
+import nrrd
 
 #_/_/_/ paths _/_/_/
-TRAINING_DATA_PATH          = os.path.join('..','adni','train')
+TRAINING_DATA_PATH          = os.path.join('..','adni3','train')
 # TRAINING_DATA_PATH          = "../training_BSD68.txt"
-TESTING_DATA_PATH           = os.path.join('..','adni','test')
+TESTING_DATA_PATH           = os.path.join('..','adni3','train')
 # TESTING_DATA_PATH           = "../testing_1.txt"
 IMAGE_DIR_PATH              = "../"
-SAVE_PATH            = "./model/denoise_myfcn_2d_"
+SAVE_PATH            = "./model/denoise_myfcn_3d_"
 
 #_/_/_/ training parameters _/_/_/
 LEARNING_RATE    = 0.001
@@ -25,6 +26,7 @@ TEST_BATCH_SIZE  = 1 #must be 1
 N_EPISODES           = 1000#30000
 EPISODE_LEN = 30#5
 GAMMA = 0.95 # discount factor
+MAX_INTENSITY = (2**15)-1#32767
 
 #noise setting
 MEAN = 0
@@ -41,11 +43,13 @@ def test(loader, agent, fout):
     sum_reward = 0
     test_data_size = MiniBatchLoader.count_paths(TESTING_DATA_PATH)
     current_state = State.State((TEST_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
-    for i in range(0, test_data_size, TEST_BATCH_SIZE):
+    # for i in range(0, test_data_size, TEST_BATCH_SIZE):
+    for i in range(0, 1, TEST_BATCH_SIZE):
         raw_x, raw_y = loader.load_testing_data(np.array(range(i, i+TEST_BATCH_SIZE)))
-        raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/255
+        # print(raw_y.max(),raw_x.max())
+        raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/MAX_INTENSITY
         current_state.reset(raw_x,raw_n)
-        reward = np.zeros(raw_x.shape, raw_x.dtype)*255
+        reward = np.zeros(raw_x.shape, raw_x.dtype)*MAX_INTENSITY
 
 
         for t in range(0, EPISODE_LEN):
@@ -53,37 +57,37 @@ def test(loader, agent, fout):
             action, inner_state = agent.act(current_state.tensor)
             actionMap = np.stack((action,)*3, axis=-1).squeeze()
 
-            def actionToColor(a):
-                if a[0] == 0:
-                    return np.array([255, 255, 255])
-                if a[0] == 1:
-                    return np.array([128, 128, 128])
-                if a[0] == 2:
-                    return np.array([0, 0, 0])
-                if a[0] == 3:
-                    return np.array([255, 0, 0])
-                if a[0] == 4:
-                    return np.array([255, 255, 255])
-                if a[0] == 5:
-                    return np.array([255, 255, 0])
-                if a[0] == 6:
-                    return np.array([0, 128, 128])
-                if a[0] == 7:
-                    return np.array([128, 0, 128])
-                if a[0] == 8:
-                    return np.array([0, 128, 255])
-
-            actionMap = np.apply_along_axis(actionToColor, 2, actionMap)
+            # def actionToColor(a):
+            #     if a[0] == 0:
+            #         return np.array([255, 255, 255])
+            #     if a[0] == 1:
+            #         return np.array([128, 128, 128])
+            #     if a[0] == 2:
+            #         return np.array([0, 0, 0])
+            #     if a[0] == 3:
+            #         return np.array([255, 0, 0])
+            #     if a[0] == 4:
+            #         return np.array([255, 255, 255])
+            #     if a[0] == 5:
+            #         return np.array([255, 255, 0])
+            #     if a[0] == 6:
+            #         return np.array([0, 128, 128])
+            #     if a[0] == 7:
+            #         return np.array([128, 0, 128])
+            #     if a[0] == 8:
+            #         return np.array([0, 128, 255])
+            #
+            # actionMap = np.apply_along_axis(actionToColor, 2, actionMap)
             current_state.step(action, inner_state)
-            reward = np.square(raw_y - previous_image)*255 - np.square(raw_y - current_state.image)*255
+            reward = np.square(raw_y - previous_image)*MAX_INTENSITY - np.square(raw_y - current_state.image)*MAX_INTENSITY
             sum_reward += np.mean(reward)*np.power(GAMMA,t)
 
-            p = np.maximum(0,current_state.image)
-            p = np.minimum(1,p)
-            p = (p[0]*255+0.5).astype(np.uint8)
-            p = np.transpose(p,(1,2,0))
-            cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_output.png',p)
-            cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_action.png',actionMap)
+            # p = np.maximum(0,current_state.image)
+            # p = np.minimum(1,p)
+            # p = (p[0]*255+0.5).astype(np.uint8)
+            # p = np.transpose(p,(1,2,0))
+            # cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_output.png',p)
+            # cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_action.png',actionMap)
 
         agent.stop_episode()
 
@@ -93,20 +97,24 @@ def test(loader, agent, fout):
         N = np.minimum(1,N)
         p = np.maximum(0,current_state.image)
         p = np.minimum(1,p)
-        I = (I[0]*255+0.5).astype(np.uint8)
-        N = (N[0]*255+0.5).astype(np.uint8)
-        p = (p[0]*255+0.5).astype(np.uint8)
-        p = np.transpose(p,(1,2,0))
-        I = np.transpose(I,(1,2,0))
-        N = np.transpose(N,(1,2,0))
-        cv2.imwrite('./resultimage/'+str(i)+'_input.png',I)
-        cv2.imwrite('./resultimage/'+str(i)+'_output.png',p)
-        cv2.imwrite('./resultimage/'+str(i)+'_label.png',N)
+        # print("p[0].max()",p[0].max()*)
+        I = (I[0]*MAX_INTENSITY+0.5).astype(np.uint32)
+        N = (N[0]*MAX_INTENSITY+0.5).astype(np.uint32)
+        p = (p[0]*MAX_INTENSITY+0.5).astype(np.uint32)
+        p = np.transpose(p,(1,2,3,0))
+        I = np.transpose(I,(1,2,3,0))
+        N = np.transpose(N,(1,2,3,0))
+        # print(I.max(),I.min(),I.shape,MAX_INTENSITY)
+        # print(p.max(),p.min(),p.shape,MAX_INTENSITY)
+        nrrd.write('./resultimage/output.nrrd',p)
+        # cv2.imwrite('./resultimage/'+str(i)+'_input.png',I)
+        # cv2.imwrite('./resultimage/'+str(i)+'_output.png',p)
+        # cv2.imwrite('./resultimage/'+str(i)+'_label.png',N)
 
-        sum_psnr += cv2.PSNR(p, I)
+        # sum_psnr += cv2.PSNR(p, I)
 
-    print("test total reward {a}, PSNR {b}".format(a=sum_reward*255/test_data_size, b=sum_psnr/test_data_size))
-    fout.write("test total reward {a}, PSNR {b}\n".format(a=sum_reward*255/test_data_size, b=sum_psnr/test_data_size))
+    print("test total reward {a}, PSNR {b}".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
+    fout.write("test total reward {a}, PSNR {b}\n".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
     sys.stdout.flush()
 
 
@@ -130,7 +138,7 @@ def main(fout):
     optimizer.setup(model)
 
     agent = PixelWiseA3C_InnerState_ConvR(model, optimizer, EPISODE_LEN, GAMMA)
-    chainer.serializers.load_npz('./model/denoise_myfcn_2d_1000/model.npz', agent.model)
+    chainer.serializers.load_npz('./model/denoise_myfcn_3d_1000/model.npz', agent.model)
     agent.act_deterministically = True
     agent.model.to_gpu()
 

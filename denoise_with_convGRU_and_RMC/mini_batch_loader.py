@@ -2,7 +2,9 @@ import os
 import numpy as np
 import cv2
 from glob import glob
+import nibabel as nib
 
+MAX_INTENSITY = (2**15)-1
 
 class MiniBatchLoader(object):
 
@@ -35,7 +37,7 @@ class MiniBatchLoader(object):
     # test ok
     @staticmethod
     def read_paths(txt_path, src_path):
-        return glob(os.path.join(txt_path,"*.png"))
+        return glob(os.path.join(txt_path,"*.nii"))
         # cs = []
         # for pair in MiniBatchLoader.path_label_generator(txt_path, src_path):
         #     cs.append(pair)
@@ -61,55 +63,60 @@ class MiniBatchLoader(object):
             return labelPath
 
         if augment:
-            xs = np.zeros((mini_batch_size, in_channels, self.crop_size, self.crop_size)).astype(np.float32)
-            ys = np.zeros((mini_batch_size, in_channels, self.crop_size, self.crop_size)).astype(np.float32)
+            xs = np.zeros((mini_batch_size, in_channels, self.crop_size, self.crop_size, self.crop_size)).astype(np.float32)
+            ys = np.zeros((mini_batch_size, in_channels, self.crop_size, self.crop_size, self.crop_size)).astype(np.float32)
 
             for i, index in enumerate(indices):
                 path = path_infos[index]
-                labelPath = labelPathFromPath(path)
+                # labelPath = labelPathFromPath(path)
+                labelPath = os.path.join('..','adni3','label','antsBTPtemplate0ss_002_S_0559_2007-10-18_17_06_13.03WarpedToTemplate.nii')
 
-                img = cv2.imread(path,0)
-                labelImg = cv2.imread(labelPath,0)
+                # img = cv2.imread(path,0)
+                img = np.array(nib.load(path).dataobj)
+                labelImg = np.array(nib.load(labelPath).dataobj)
                 if img is None or labelImg is None:
                     raise RuntimeError("invalid image: {i}".format(i=path))
-                h, w = img.shape
-
+                x, y, z = img.shape
                 if np.random.rand() > 0.5:
                     img = np.fliplr(img)
                     labelImg = np.fliplr(labelImg)
 
-                if np.random.rand() > 0.5:
-                    angle = 10*np.random.rand()
-                    if np.random.rand() > 0.5:
-                        angle *= -1
-                    M = cv2.getRotationMatrix2D((w/2,h/2),angle,1)
-                    img = cv2.warpAffine(img,M,(w,h))
-                    labelImg = cv2.warpAffine(labelImg,M,(w,h))
+                # if np.random.rand() > 0.5:
+                #     angle = 10*np.random.rand()
+                #     if np.random.rand() > 0.5:
+                #         angle *= -1
+                #     M = cv2.getRotationMatrix2D((w/2,h/2),angle,1)
+                #     img = cv2.warpAffine(img,M,(w,h))
+                #     labelImg = cv2.warpAffine(labelImg,M,(w,h))
 
-                rand_range_h = h-self.crop_size
-                rand_range_w = w-self.crop_size
-                x_offset = np.random.randint(rand_range_w)
-                y_offset = np.random.randint(rand_range_h)
-                img = img[y_offset:y_offset+self.crop_size, x_offset:x_offset+self.crop_size]
-                labelImg = labelImg[y_offset:y_offset+self.crop_size, x_offset:x_offset+self.crop_size]
-                xs[i, 0, :, :] = (img/255).astype(np.float32)
-                ys[i, 0, :, :] = (labelImg/255).astype(np.float32)
+                rand_range_x = x-self.crop_size
+                rand_range_y = y-self.crop_size
+                rand_range_z = z-self.crop_size
+                x_offset = np.random.randint(rand_range_x)
+                y_offset = np.random.randint(rand_range_y)
+                z_offset = np.random.randint(rand_range_z)
+                img = img[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
+                labelImg = labelImg[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
+                xs[i, 0, :, :, :] = (img/MAX_INTENSITY).astype(np.float32)
+                ys[i, 0, :, :, :] = (labelImg/MAX_INTENSITY).astype(np.float32)
 
         elif mini_batch_size == 1:
             for i, index in enumerate(indices):
                 path = path_infos[index]
-                labelPath = labelPathFromPath(path)
+                labelPath =  os.path.join('..','adni3','label','antsBTPtemplate0ss_002_S_0559_2007-10-18_17_06_13.03WarpedToTemplate.nii')#labelPathFromPath(path)
 
-                img = cv2.imread(path,0)
-                labelImg = cv2.imread(labelPath,0)
+                # img = cv2.imread(path,0)
+                img = np.array(nib.load(path).dataobj)
+                labelImg = np.array(nib.load(labelPath).dataobj)
+                # labelImg = cv2.imread(labelPath,0)
                 if img is None or labelImg is None:
                     raise RuntimeError("invalid image: {i}".format(i=path))
 
-            h, w = img.shape
-            xs = np.zeros((mini_batch_size, in_channels, h, w)).astype(np.float32)
-            ys = np.zeros((mini_batch_size, in_channels, h, w)).astype(np.float32)
-            xs[0, 0, :, :] = (img/255).astype(np.float32)
-            ys[0, 0, :, :] = (labelImg/255).astype(np.float32)
+            x, y, z = img.shape
+            xs = np.zeros((mini_batch_size, in_channels, x, y, z)).astype(np.float32)
+            ys = np.zeros((mini_batch_size, in_channels, x, y, z)).astype(np.float32)
+            xs[0, 0, :, :, :] = (img/MAX_INTENSITY).astype(np.float32)
+            ys[0, 0, :, :, :] = (labelImg/MAX_INTENSITY).astype(np.float32)
 
         else:
             raise RuntimeError("mini batch size must be 1 when testing")

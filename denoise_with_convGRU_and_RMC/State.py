@@ -10,17 +10,21 @@ class State():
     def reset(self, x, n):
         self.image = x#+n
         size = self.image.shape
-        prev_state = np.zeros((size[0],64,size[2],size[3]),dtype=np.float32)
+        prev_state = np.zeros((size[0],16,size[2],size[3],size[4]),dtype=np.float32)
         self.tensor = np.concatenate((self.image, prev_state), axis=1)
 
     def set(self, x):
         self.image = x
-        self.tensor[:,:self.image.shape[1],:,:] = self.image
+        self.tensor[:,:self.image.shape[1],:,:,:] = self.image
 
     def step(self, act, inner_state):
         neutral = (self.move_range - 1)/2
         move = act.astype(np.float32)
-        move = (move - neutral)/255
+        # print(move.min(),move.max())
+        move = ((move - neutral)/((2**15)-1))# * 1000
+        # print(move.min(),move.max())
+        # print(self.image.min(),self.image.max())
+        # print("**")
         moved_image = self.image + move[:,np.newaxis,:,:]
         gaussian = np.zeros(self.image.shape, self.image.dtype)
         gaussian2 = np.zeros(self.image.shape, self.image.dtype)
@@ -29,7 +33,7 @@ class State():
         median = np.zeros(self.image.shape, self.image.dtype)
         box = np.zeros(self.image.shape, self.image.dtype)
         #guided = np.zeros(self.image.shape, self.image.dtype)
-        b, c, h, w = self.image.shape
+        b, c, h, w, z = self.image.shape
         for i in range(0,b):
             if np.sum(act[i]==self.move_range) > 0:
                 gaussian[i,0] = cv2.GaussianBlur(self.image[i,0], ksize=(5,5), sigmaX=0.5)
@@ -55,5 +59,5 @@ class State():
         # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+5, box, self.image)
         #self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+3, guided, self.image)
 
-        self.tensor[:,:self.image.shape[1],:,:] = self.image
-        self.tensor[:,-64:,:,:] = inner_state
+        self.tensor[:,:self.image.shape[1],:,:,:] = self.image
+        self.tensor[:,-16:,:,:,:] = inner_state

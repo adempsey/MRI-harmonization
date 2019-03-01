@@ -37,12 +37,12 @@ def myentropy(self):
 
 ###########################
 def mylog_prob(self, x):
-    n_batch, n_actions, h, w = self.all_log_prob.shape
-    p_trans = F.transpose(self.all_log_prob, axes=(0,2,3,1))
+    n_batch, n_actions, h, w, z = self.all_log_prob.shape
+    p_trans = F.transpose(self.all_log_prob, axes=(0,2,3,4,1))
     p_trans = F.reshape(p_trans,(-1,n_actions))
     x_reshape = F.reshape(x,(1,-1))[0]
     selected_p = F.select_item(p_trans,x_reshape)
-    return F.reshape(selected_p, (n_batch,1,h,w))
+    return F.reshape(selected_p, (n_batch,1,h,w,z))
 ##########################
 
 class PixelWiseA3C_InnerState_ConvR(agent.AttributeSavingMixin, agent.AsyncAgent):
@@ -324,4 +324,3 @@ class PixelWiseA3C_InnerState_ConvR(agent.AttributeSavingMixin, agent.AsyncAgent
             ('average_value', self.average_value),
             ('average_entropy', self.average_entropy),
         ]
-
