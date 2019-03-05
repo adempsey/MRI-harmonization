@@ -97,6 +97,12 @@ class MiniBatchLoader(object):
                 z_offset = np.random.randint(rand_range_z)
                 img = img[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
                 labelImg = labelImg[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
+
+                if img.max() > 0:
+                    img = img.astype(np.float32)
+                    labelImg = labelImg.astype(np.float32)
+                    img = (img / img.max()) * labelImg.max()
+
                 xs[i, 0, :, :, :] = (img/MAX_INTENSITY).astype(np.float32)
                 ys[i, 0, :, :, :] = (labelImg/MAX_INTENSITY).astype(np.float32)
 
@@ -111,6 +117,11 @@ class MiniBatchLoader(object):
                 # labelImg = cv2.imread(labelPath,0)
                 if img is None or labelImg is None:
                     raise RuntimeError("invalid image: {i}".format(i=path))
+
+            if img.max() > 0:
+                img = img.astype(np.float32)
+                labelImg = labelImg.astype(np.float32)
+                img = (img / img.max()) * labelImg.max()
 
             x, y, z = img.shape
             xs = np.zeros((mini_batch_size, in_channels, x, y, z)).astype(np.float32)
