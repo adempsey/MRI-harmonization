@@ -14,7 +14,7 @@ import nrrd
 #_/_/_/ paths _/_/_/
 TRAINING_DATA_PATH          = os.path.join('..','adni3','train')
 # TRAINING_DATA_PATH          = "../training_BSD68.txt"
-TESTING_DATA_PATH           = os.path.join('..','adni3','train')
+TESTING_DATA_PATH           = os.path.join('..','adni3','test')
 # TESTING_DATA_PATH           = "../testing_1.txt"
 IMAGE_DIR_PATH              = "../"
 SAVE_PATH            = "./model/denoise_myfcn_3d_"
@@ -82,8 +82,11 @@ def test(loader, agent, fout):
             reward = np.square(raw_y - previous_image)*MAX_INTENSITY - np.square(raw_y - current_state.image)*MAX_INTENSITY
             sum_reward += np.mean(reward)*np.power(GAMMA,t)
 
-            # p = np.maximum(0,current_state.image)
-            # p = np.minimum(1,p)
+            p = np.maximum(0,current_state.image)
+            p = np.minimum(1,p)
+            p = (p[0]*MAX_INTENSITY+0.5).astype(np.uint32)
+            p = np.transpose(p,(1,2,3,0))
+            # nrrd.write('./resultimage/output_%s.nrrd' % str(t),p)
             # p = (p[0]*255+0.5).astype(np.uint8)
             # p = np.transpose(p,(1,2,0))
             # cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_output.png',p)
@@ -106,7 +109,7 @@ def test(loader, agent, fout):
         N = np.transpose(N,(1,2,3,0))
         # print(I.max(),I.min(),I.shape,MAX_INTENSITY)
         # print(p.max(),p.min(),p.shape,MAX_INTENSITY)
-        nrrd.write('./resultimage/output.nrrd',p)
+        nrrd.write('./resultimage/output_final.nrrd',p)
         # cv2.imwrite('./resultimage/'+str(i)+'_input.png',I)
         # cv2.imwrite('./resultimage/'+str(i)+'_output.png',p)
         # cv2.imwrite('./resultimage/'+str(i)+'_label.png',N)

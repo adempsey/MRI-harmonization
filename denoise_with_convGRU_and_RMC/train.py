@@ -11,17 +11,17 @@ import os
 from pixelwise_a3c import *
 
 #_/_/_/ paths _/_/_/
-TRAINING_DATA_PATH          = os.path.join('..','adni3','train')#"../training_BSD68.txt"
-TESTING_DATA_PATH           = os.path.join('..','adni3','train')
+TRAINING_DATA_PATH          = os.path.join('..','adni3','train2')#"../training_BSD68.txt"
+TESTING_DATA_PATH           = os.path.join('..','adni3','test2')
 # TESTING_DATA_PATH           = "../testing.txt"
 IMAGE_DIR_PATH              = "../"
 SAVE_PATH            = "./model/denoise_myfcn_3d_"
 
 #_/_/_/ training parameters _/_/_/
 LEARNING_RATE    = 0.001
-TRAIN_BATCH_SIZE = 64
+TRAIN_BATCH_SIZE = 32#64
 TEST_BATCH_SIZE  = 1 #must be 1
-N_EPISODES           = 5000
+N_EPISODES           = 30000
 EPISODE_LEN = 10#30#5
 SNAPSHOT_EPISODES  = 100
 TEST_EPISODES = 100
@@ -104,7 +104,7 @@ def main(fout):
         sys.stdout.flush()
         # load images
         r = indices[i:i+TRAIN_BATCH_SIZE]
-        raw_x, raw_y = mini_batch_loader.load_training_data(r)
+        raw_x, raw_y, x_aff, y_aff, x_warp, y_warp = mini_batch_loader.load_training_data(r)
         # generate noise
         raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/MAX_INTENSITY
         # initialize the current state and reward

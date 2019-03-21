@@ -22,10 +22,17 @@ class State():
         move = act.astype(np.float32)
         # print(move.min(),move.max())
         move = ((move - neutral)/((2**15)-1))# * 1000
+        # move = np.where(move == 2, 1.05, move)
+        # move = np.where(move == 1, 1.05, move)
+        # move = np.where(move == 0, 1., move)
+        # move = np.where(move == -1, 0.95, move)
+        # move = np.where(move == -2, -1.05, move)
         # print(move.min(),move.max())
         # print(self.image.min(),self.image.max())
         # print("**")
+        # print(move)
         moved_image = self.image + move[:,np.newaxis,:,:]
+        # moved_image = np.multiply(self.image, move[:,np.newaxis,:,:])
         gaussian = np.zeros(self.image.shape, self.image.dtype)
         gaussian2 = np.zeros(self.image.shape, self.image.dtype)
         bilateral = np.zeros(self.image.shape, self.image.dtype)
