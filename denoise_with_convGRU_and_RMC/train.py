@@ -38,22 +38,23 @@ CROP_SIZE = 15#70
 GPU_ID = 0
 
 def test(loader, agent, fout):
+    return
     sum_psnr     = 0
     sum_reward = 0
-    test_data_size = MiniBatchLoader.count_paths(TESTING_DATA_PATH)
+    test_data_size = 1#MiniBatchLoader.count_paths(TESTING_DATA_PATH)
     current_state = State.State((TEST_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
     for i in range(0, test_data_size, TEST_BATCH_SIZE):
         raw_x, raw_y = loader.load_testing_data(np.array(range(i, i+TEST_BATCH_SIZE)))
         raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/MAX_INTENSITY
         current_state.reset(raw_x,raw_n)
-        reward = np.zeros(raw_x.shape, raw_x.dtype)*MAX_INTENSITY
-
+        # reward = np.zeros(raw_x.shape, raw_x.dtype)*MAX_INTENSITY
         for t in range(0, EPISODE_LEN):
+            print(t, EPISODE_LEN)
             previous_image = current_state.image.copy()
             action, inner_state = agent.act(current_state.tensor)
             current_state.step(action, inner_state)
-            reward = np.square(raw_y - previous_image)*MAX_INTENSITY - np.square(raw_y - current_state.image)*MAX_INTENSITY
-            sum_reward += np.mean(reward)*np.power(GAMMA,t)
+            # reward = np.square(raw_y - previous_image)*MAX_INTENSITY - np.square(raw_y - current_state.image)*MAX_INTENSITY
+            # sum_reward += np.mean(reward)*np.power(GAMMA,t)
 
         agent.stop_episode()
 
@@ -65,9 +66,9 @@ def test(loader, agent, fout):
         p = (p*MAX_INTENSITY+0.5).astype(np.uint32)
         # sum_psnr += cv2.PSNR(p, I)
 
-    print("test total reward {a}, PSNR {b}".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
-    fout.write("test total reward {a}, PSNR {b}\n".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
-    sys.stdout.flush()
+    # print("test total reward {a}, PSNR {b}".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
+    # fout.write("test total reward {a}, PSNR {b}\n".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
+    # sys.stdout.flush()
 
 
 def main(fout):
@@ -104,7 +105,7 @@ def main(fout):
         sys.stdout.flush()
         # load images
         r = indices[i:i+TRAIN_BATCH_SIZE]
-        raw_x, raw_y, x_aff, y_aff, x_warp, y_warp = mini_batch_loader.load_training_data(r)
+        raw_x, raw_y = mini_batch_loader.load_training_data(r)
         # generate noise
         raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/MAX_INTENSITY
         # initialize the current state and reward
@@ -117,8 +118,42 @@ def main(fout):
             action, inner_state = agent.act_and_train(current_state.tensor, reward)
             current_state.step(action, inner_state)
             reward = np.square(raw_y - previous_image)*MAX_INTENSITY - np.square(raw_y - current_state.image)*MAX_INTENSITY
+            # print(reward.min(),reward.max())
             # reward = np.square(raw_x - previous_image)*255 - np.square(raw_x - current_state.image)*255
             sum_reward += np.mean(reward)*np.power(GAMMA,t)
+        # print(current_state.tensor.shape)
+        # print(current_state.image.shape)
+        # print(raw_x.shape)
+        # print(raw_y.shape)
+
+        # I = np.maximum(0,raw_x[0,:,:,:,:])
+        # I = np.minimum(1,I)
+        # N = np.maximum(0,raw_y[0,:,:,:,:])
+        # N = np.minimum(1,N)
+        # p = np.maximum(0,current_state.image[0,:,:,:,:])
+        # p = np.minimum(1,p)
+        # # print("p[0].max()",p[0].max()*)
+        # I = (I[0]*MAX_INTENSITY+0.5).astype(np.uint32)
+        # N = (N[0]*MAX_INTENSITY+0.5).astype(np.uint32)
+        # p = (p[0]*MAX_INTENSITY+0.5).astype(np.uint32)
+        # p = np.transpose(p,(1,2,3,0))
+        # I = np.transpose(I,(1,2,3,0))
+        # N = np.transpose(N,(1,2,3,0))
+        # print(I.max(),I.min(),I.shape,MAX_INTENSITY)
+        # print(p.max(),p.min(),p.shape,MAX_INTENSITY)
+        raw_x *= (2**15)-1
+        raw_y *= (2**15)-1
+        output = current_state.image * (2**15)-1
+        print(np.max(raw_x),np.max(raw_y), np.max(output))
+        nrrd.write('./trainoutput/%d_input.nrrd'%episode,raw_x)
+        nrrd.write('./trainoutput/%d_target.nrrd'%episode,raw_y)
+        nrrd.write('./trainoutput/%d_output.nrrd'%episode,output)
+        # cv2.imwrite('./resultimage/'+str(i)+'_input.png',I)
+        # cv2.imwrite('./resultimage/'+str(i)+'_output.png',p)
+        # cv2.imwrite('./resultimage/'+str(i)+'_label.png',N)
+
+
+
 
         agent.stop_episode_and_train(current_state.tensor, reward, True)
         print("train total reward {a}".format(a=sum_reward*MAX_INTENSITY))
@@ -147,6 +182,8 @@ def main(fout):
 
 if __name__ == '__main__':
     try:
+
+        np.seterr(divide='raise', invalid='raise')
         fout = open('log.txt', "w")
         start = time.time()
         main(fout)
