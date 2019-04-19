@@ -12,9 +12,9 @@ from pixelwise_a3c import *
 import nrrd
 
 #_/_/_/ paths _/_/_/
-TRAINING_DATA_PATH          = os.path.join('..','adni3','train')
+TRAINING_DATA_PATH          = os.path.join('..','adni3','train3')
 # TRAINING_DATA_PATH          = "../training_BSD68.txt"
-TESTING_DATA_PATH           = os.path.join('..','adni3','test')
+TESTING_DATA_PATH           = os.path.join('..','adni3','test2')
 # TESTING_DATA_PATH           = "../testing_1.txt"
 IMAGE_DIR_PATH              = "../"
 SAVE_PATH            = "./model/denoise_myfcn_3d_"
@@ -32,8 +32,8 @@ MAX_INTENSITY = (2**15)-1#32767
 MEAN = 0
 SIGMA = 80
 
-N_ACTIONS = 3#9
-MOVE_RANGE = 3 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
+N_ACTIONS = 5#9
+MOVE_RANGE = 5 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
 CROP_SIZE = 30#70
 
 GPU_ID = 0
@@ -79,8 +79,8 @@ def test(loader, agent, fout):
             #
             # actionMap = np.apply_along_axis(actionToColor, 2, actionMap)
             current_state.step(action, inner_state)
-            reward = np.square(raw_y - previous_image)*MAX_INTENSITY - np.square(raw_y - current_state.image)*MAX_INTENSITY
-            sum_reward += np.mean(reward)*np.power(GAMMA,t)
+            # reward = np.square(raw_y - previous_image)*MAX_INTENSITY - np.square(raw_y - current_state.image)*MAX_INTENSITY
+            # sum_reward += np.mean(reward)*np.power(GAMMA,t)
 
             p = np.maximum(0,current_state.image)
             p = np.minimum(1,p)
@@ -96,28 +96,29 @@ def test(loader, agent, fout):
 
         I = np.maximum(0,raw_x)
         I = np.minimum(1,I)
-        N = np.maximum(0,raw_y)
-        N = np.minimum(1,N)
+        # N = np.maximum(0,raw_y)
+        # N = np.minimum(1,N)
         p = np.maximum(0,current_state.image)
         p = np.minimum(1,p)
         # print("p[0].max()",p[0].max()*)
         I = (I[0]*MAX_INTENSITY+0.5).astype(np.uint32)
-        N = (N[0]*MAX_INTENSITY+0.5).astype(np.uint32)
+        # N = (N[0]*MAX_INTENSITY+0.5).astype(np.uint32)
         p = (p[0]*MAX_INTENSITY+0.5).astype(np.uint32)
         p = np.transpose(p,(1,2,3,0))
         I = np.transpose(I,(1,2,3,0))
-        N = np.transpose(N,(1,2,3,0))
+        # N = np.transpose(N,(1,2,3,0))
         # print(I.max(),I.min(),I.shape,MAX_INTENSITY)
         # print(p.max(),p.min(),p.shape,MAX_INTENSITY)
-        nrrd.write('./resultimage/output_final.nrrd',p)
+        nrrd.write('./resultimage/input_final.nrrd',raw_x)
+        nrrd.write('./resultimage/output_final.nrrd',current_state.image)
         # cv2.imwrite('./resultimage/'+str(i)+'_input.png',I)
         # cv2.imwrite('./resultimage/'+str(i)+'_output.png',p)
         # cv2.imwrite('./resultimage/'+str(i)+'_label.png',N)
 
         # sum_psnr += cv2.PSNR(p, I)
 
-    print("test total reward {a}, PSNR {b}".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
-    fout.write("test total reward {a}, PSNR {b}\n".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
+    # print("test total reward {a}, PSNR {b}".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
+    # fout.write("test total reward {a}, PSNR {b}\n".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
     sys.stdout.flush()
 
 
@@ -141,7 +142,7 @@ def main(fout):
     optimizer.setup(model)
 
     agent = PixelWiseA3C_InnerState_ConvR(model, optimizer, EPISODE_LEN, GAMMA)
-    chainer.serializers.load_npz('./model/denoise_myfcn_3d_1000/model.npz', agent.model)
+    chainer.serializers.load_npz('./model/denoise_myfcn_3d_30000/model.npz', agent.model)
     agent.act_deterministically = True
     agent.model.to_gpu()
 

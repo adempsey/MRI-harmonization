@@ -11,7 +11,7 @@ import os
 from pixelwise_a3c import *
 
 #_/_/_/ paths _/_/_/
-TRAINING_DATA_PATH          = os.path.join('..','adni3','train2')#"../training_BSD68.txt"
+TRAINING_DATA_PATH          = os.path.join('..','adni3','train3')#"../training_BSD68.txt"
 TESTING_DATA_PATH           = os.path.join('..','adni3','test2')
 # TESTING_DATA_PATH           = "../testing.txt"
 IMAGE_DIR_PATH              = "../"
@@ -19,10 +19,10 @@ SAVE_PATH            = "./model/denoise_myfcn_3d_"
 
 #_/_/_/ training parameters _/_/_/
 LEARNING_RATE    = 0.001
-TRAIN_BATCH_SIZE = 32#64
+TRAIN_BATCH_SIZE = 16#32#64
 TEST_BATCH_SIZE  = 1 #must be 1
 N_EPISODES           = 30000
-EPISODE_LEN = 10#30#5
+EPISODE_LEN = 5#10#30#5
 SNAPSHOT_EPISODES  = 100
 TEST_EPISODES = 100
 GAMMA = 0.95 # discount factor
@@ -31,8 +31,8 @@ MAX_INTENSITY = (2**15)-1
 #noise setting
 MEAN = 0
 SIGMA = 80
-N_ACTIONS = 3#9
-MOVE_RANGE = 3 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
+N_ACTIONS = 5#9
+MOVE_RANGE = 5 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
 CROP_SIZE = 15#70
 
 GPU_ID = 0
@@ -120,6 +120,9 @@ def main(fout):
             reward = np.square(raw_y - previous_image)*MAX_INTENSITY - np.square(raw_y - current_state.image)*MAX_INTENSITY
             # print(reward.min(),reward.max())
             # reward = np.square(raw_x - previous_image)*255 - np.square(raw_x - current_state.image)*255
+            # print("raw_x",raw_x.min(),raw_x.max(),np.mean(raw_x))
+            # print("raw_y",raw_y.min(),raw_y.max(),np.mean(raw_y))
+            # print("*")
             sum_reward += np.mean(reward)*np.power(GAMMA,t)
         # print(current_state.tensor.shape)
         # print(current_state.image.shape)
@@ -144,10 +147,11 @@ def main(fout):
         raw_x *= (2**15)-1
         raw_y *= (2**15)-1
         output = current_state.image * (2**15)-1
-        print(np.max(raw_x),np.max(raw_y), np.max(output))
-        nrrd.write('./trainoutput/%d_input.nrrd'%episode,raw_x)
-        nrrd.write('./trainoutput/%d_target.nrrd'%episode,raw_y)
-        nrrd.write('./trainoutput/%d_output.nrrd'%episode,output)
+        # print(np.max(raw_x),np.max(raw_y), np.max(output))
+        if episode % 100 == 0:
+            nrrd.write('./trainoutput/%d_input.nrrd'%episode,raw_x)
+            nrrd.write('./trainoutput/%d_target.nrrd'%episode,raw_y)
+            nrrd.write('./trainoutput/%d_output.nrrd'%episode,output)
         # cv2.imwrite('./resultimage/'+str(i)+'_input.png',I)
         # cv2.imwrite('./resultimage/'+str(i)+'_output.png',p)
         # cv2.imwrite('./resultimage/'+str(i)+'_label.png',N)

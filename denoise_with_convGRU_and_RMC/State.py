@@ -18,11 +18,26 @@ class State():
         self.tensor[:,:self.image.shape[1],:,:,:] = self.image
 
     def step(self, act, inner_state):
-        neutral = (self.move_range - 1)/2
+        # neutral = (self.move_range - 1)/2
         move = act.astype(np.float32)
+        # print(move)
+
+        move = np.where(move == 4,  0.01, move)
+        move = np.where(move == 3,  0.001, move)
+        move = np.where(move == 1, -0.001, move)
+        move = np.where(move == 0, -0.01, move)
+        move = np.where(move == 2,  0, move)
+        # print(move)
         # print(move.min(),move.max())
-        move = ((move - neutral)/((2**15)-1))# * 1000
+        # move = (move - neutral)/100#/((2**15)-1))# * 1000
+        # print(move)
+        # print(move)
         # move = np.where(move == 2, 1.05, move)
+        # print(self.image.shape)
+        # print(self.image.min(),self.image.max())
+        # move = np.where(move == 1,0.05, move)
+        # move = np.where(move == 0, 1., move)
+        # move = np.where(move == -1, -0.05, move)
         # move = np.where(move == 1, 1.05, move)
         # move = np.where(move == 0, 1., move)
         # move = np.where(move == -1, 0.95, move)
@@ -31,7 +46,10 @@ class State():
         # print(self.image.min(),self.image.max())
         # print("**")
         # print(move)
+        # print("currentimg",self.image.min(),self.image.max(),np.mean(self.image))
         moved_image = self.image + move[:,np.newaxis,:,:]
+        moved_image = np.clip(moved_image, 0, (2**15)-1)
+        # print(moved_image)
         # moved_image = np.multiply(self.image, move[:,np.newaxis,:,:])
         gaussian = np.zeros(self.image.shape, self.image.dtype)
         gaussian2 = np.zeros(self.image.shape, self.image.dtype)

@@ -158,7 +158,8 @@ class MiniBatchLoader(object):
             ys = np.zeros((mini_batch_size, in_channels, self.crop_size, self.crop_size, self.crop_size)).astype(np.float32)
 
             for i, index in enumerate(indices):
-                path = path_infos[index]
+                # path = path_infos[index]
+                path = os.path.join('..','adni3','train2','ss_002_S_1018_2006-11-29_10_09_05.0.nii')
                 # path = os.path.join('..','adni3','train2','ss_002_S_1261_2009-02-05_10_32_22.0.nii')
                 labelPath = labelPathFromPath(path)
                 # labelPath = os.path.join('..','adni3','label2','ss_002_S_1261_2007-02-27_13_40_08.0.nii')
@@ -203,6 +204,8 @@ class MiniBatchLoader(object):
                 x_offset = np.random.randint(rand_range_x)+xRange
                 y_offset = np.random.randint(rand_range_y)+yRange
                 z_offset = np.random.randint(rand_range_z)+zRange
+
+                print(i,x_offset,y_offset,z_offset)
 
                 img = img[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
 
