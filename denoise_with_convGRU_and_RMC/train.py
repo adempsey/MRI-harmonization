@@ -11,8 +11,8 @@ import os
 from pixelwise_a3c import *
 
 #_/_/_/ paths _/_/_/
-TRAINING_DATA_PATH          = os.path.join('..','adni3','train3')#"../training_BSD68.txt"
-TESTING_DATA_PATH           = os.path.join('..','adni3','test2')
+TRAINING_DATA_PATH          = os.path.join('..','adni3','train')#"../training_BSD68.txt"
+TESTING_DATA_PATH           = os.path.join('..','adni3','test')
 # TESTING_DATA_PATH           = "../testing.txt"
 IMAGE_DIR_PATH              = "../"
 SAVE_PATH            = "./model/denoise_myfcn_3d_"

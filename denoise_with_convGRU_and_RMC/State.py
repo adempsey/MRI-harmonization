@@ -48,7 +48,7 @@ class State():
         # print(move)
         # print("currentimg",self.image.min(),self.image.max(),np.mean(self.image))
         moved_image = self.image + move[:,np.newaxis,:,:]
-        moved_image = np.clip(moved_image, 0, (2**15)-1)
+        # moved_image = np.clip(moved_image, 0, (2**15)-1)
         # print(moved_image)
         # moved_image = np.multiply(self.image, move[:,np.newaxis,:,:])
         gaussian = np.zeros(self.image.shape, self.image.dtype)

@@ -205,22 +205,23 @@ class MiniBatchLoader(object):
                 y_offset = np.random.randint(rand_range_y)+yRange
                 z_offset = np.random.randint(rand_range_z)+zRange
 
-                print(i,x_offset,y_offset,z_offset)
+                # print(i,x_offset,y_offset,z_offset)
 
                 img = img[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
+                labelImg = labelImg[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
 
-                labelImgWarped = np.zeros((self.crop_size,self.crop_size,self.crop_size))
-                for i in range(self.crop_size):
-                    for j in range(self.crop_size):
-                        for k in range(self.crop_size):
-                            originPoint = [x_offset+i,y_offset+j,z_offset+k]
-                            refPoint = self.transformPoint(originPoint, imgAff, labelAff, imgInvWarp, labelWarp, imgITK, labelITK, atlasITK)
-                            # print(path, labelPath, originPoint, refPoint)
-                            labelImgWarped[i,j,k] = labelImg[refPoint[0],refPoint[1],refPoint[2]]
-
-                # labelImg = labelImg[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
-                # print(x_offset,y_offset,z_offset, img.min(), img.max())
-                labelImg = labelImgWarped
+                # labelImgWarped = np.zeros((self.crop_size,self.crop_size,self.crop_size))
+                # for i in range(self.crop_size):
+                #     for j in range(self.crop_size):
+                #         for k in range(self.crop_size):
+                #             originPoint = [x_offset+i,y_offset+j,z_offset+k]
+                #             refPoint = self.transformPoint(originPoint, imgAff, labelAff, imgInvWarp, labelWarp, imgITK, labelITK, atlasITK)
+                #             # print(path, labelPath, originPoint, refPoint)
+                #             labelImgWarped[i,j,k] = labelImg[refPoint[0],refPoint[1],refPoint[2]]
+                #
+                # # labelImg = labelImg[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
+                # # print(x_offset,y_offset,z_offset, img.min(), img.max())
+                # labelImg = labelImgWarped
 
                 if img.max() > 0 and labelImg.max() > 0:
                     img = img.astype(np.float32)
