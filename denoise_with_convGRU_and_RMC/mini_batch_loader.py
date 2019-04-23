@@ -158,8 +158,8 @@ class MiniBatchLoader(object):
             ys = np.zeros((mini_batch_size, in_channels, self.crop_size, self.crop_size, self.crop_size)).astype(np.float32)
 
             for i, index in enumerate(indices):
-                # path = path_infos[index]
-                path = os.path.join('..','adni3','train2','ss_002_S_1018_2006-11-29_10_09_05.0.nii')
+                path = path_infos[index]
+                # path = os.path.join('..','adni3','train2','ss_002_S_1018_2006-11-29_10_09_05.0.nii')
                 # path = os.path.join('..','adni3','train2','ss_002_S_1261_2009-02-05_10_32_22.0.nii')
                 labelPath = labelPathFromPath(path)
                 # labelPath = os.path.join('..','adni3','label2','ss_002_S_1261_2007-02-27_13_40_08.0.nii')
@@ -182,9 +182,9 @@ class MiniBatchLoader(object):
                 if img is None or labelImg is None:
                     raise RuntimeError("invalid image: {i}".format(i=path))
                 x, y, z = img.shape
-                if np.random.rand() > 0.5:
-                    img = np.fliplr(img)
-                    labelImg = np.fliplr(labelImg)
+                # if np.random.rand() > 0.5:
+                #     img = np.fliplr(img)
+                #     labelImg = np.fliplr(labelImg)
 
                 # if np.random.rand() > 0.5:
                 #     angle = 10*np.random.rand()
@@ -205,7 +205,7 @@ class MiniBatchLoader(object):
                 y_offset = np.random.randint(rand_range_y)+yRange
                 z_offset = np.random.randint(rand_range_z)+zRange
 
-                print(i,x_offset,y_offset,z_offset)
+                # print(i,x_offset,y_offset,z_offset)
 
                 img = img[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
 
@@ -241,6 +241,7 @@ class MiniBatchLoader(object):
                 return xs, ys#, imgAff, labelAff, imgInvWarp, labelWarp, imgITK, labelITK, atlasITK
 
         elif mini_batch_size == 1:
+            print("HEEEEERE")
             for i, index in enumerate(indices):
                 path = path_infos[index]
                 # labelPath = labelPathFromPath(path)
@@ -258,8 +259,9 @@ class MiniBatchLoader(object):
 
             x, y, z = img.shape
             xs = np.zeros((mini_batch_size, in_channels, x, y, z)).astype(np.float32)
-            ys = np.zeros((mini_batch_size, in_channels, x, y, z)).astype(np.float32)
-            xs[0, 0, :, :, :] = (img/MAX_INTENSITY).astype(np.float32)
+            # ys = np.zeros((mini_batch_size, in_channels, x, y, z)).astype(np.float32)
+            # xs[0, 0, :, :, :] = (img/MAX_INTENSITY).astype(np.float32)
+            xs[0, 0, :, :, :] = (img/img.max()).astype(np.float32)
             # ys[0, 0, :, :, :] = (labelImg/MAX_INTENSITY).astype(np.float32)
             ys = None
 

@@ -12,9 +12,9 @@ from pixelwise_a3c import *
 import nrrd
 
 #_/_/_/ paths _/_/_/
-TRAINING_DATA_PATH          = os.path.join('..','adni3','train3')
+TRAINING_DATA_PATH          = os.path.join('..','adni3','train2')
 # TRAINING_DATA_PATH          = "../training_BSD68.txt"
-TESTING_DATA_PATH           = os.path.join('..','adni3','test2')
+TESTING_DATA_PATH           = os.path.join('..','adni3','test3')
 # TESTING_DATA_PATH           = "../testing_1.txt"
 IMAGE_DIR_PATH              = "../"
 SAVE_PATH            = "./model/denoise_myfcn_3d_"
@@ -24,7 +24,7 @@ LEARNING_RATE    = 0.001
 TRAIN_BATCH_SIZE = 64
 TEST_BATCH_SIZE  = 1 #must be 1
 N_EPISODES           = 1000#30000
-EPISODE_LEN = 30#5
+EPISODE_LEN = 3#5
 GAMMA = 0.95 # discount factor
 MAX_INTENSITY = (2**15)-1#32767
 
@@ -32,9 +32,9 @@ MAX_INTENSITY = (2**15)-1#32767
 MEAN = 0
 SIGMA = 80
 
-N_ACTIONS = 5#9
+N_ACTIONS = 6#9
 MOVE_RANGE = 5 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
-CROP_SIZE = 30#70
+CROP_SIZE = 15#70
 
 GPU_ID = 0
 
@@ -44,7 +44,7 @@ def test(loader, agent, fout):
     test_data_size = MiniBatchLoader.count_paths(TESTING_DATA_PATH)
     current_state = State.State((TEST_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
     # for i in range(0, test_data_size, TEST_BATCH_SIZE):
-    for i in range(0, 1, TEST_BATCH_SIZE):
+    for i in range(0, 5, TEST_BATCH_SIZE):
         raw_x, raw_y = loader.load_testing_data(np.array(range(i, i+TEST_BATCH_SIZE)))
         # print(raw_y.max(),raw_x.max())
         raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/MAX_INTENSITY
@@ -55,7 +55,7 @@ def test(loader, agent, fout):
         for t in range(0, EPISODE_LEN):
             previous_image = current_state.image.copy()
             action, inner_state = agent.act(current_state.tensor)
-            actionMap = np.stack((action,)*3, axis=-1).squeeze()
+            # actionMap = np.stack((action,)*3, axis=-1).squeeze()
 
             # def actionToColor(a):
             #     if a[0] == 0:
@@ -78,14 +78,17 @@ def test(loader, agent, fout):
             #         return np.array([0, 128, 255])
             #
             # actionMap = np.apply_along_axis(actionToColor, 2, actionMap)
+            # print(current_state.image.max())
             current_state.step(action, inner_state)
+
+
             # reward = np.square(raw_y - previous_image)*MAX_INTENSITY - np.square(raw_y - current_state.image)*MAX_INTENSITY
             # sum_reward += np.mean(reward)*np.power(GAMMA,t)
 
-            p = np.maximum(0,current_state.image)
-            p = np.minimum(1,p)
-            p = (p[0]*MAX_INTENSITY+0.5).astype(np.uint32)
-            p = np.transpose(p,(1,2,3,0))
+            # p = np.maximum(0,current_state.image)
+            # p = np.minimum(1,p)
+            # p = (p[0]*MAX_INTENSITY+0.5).astype(np.uint32)
+            # p = np.transpose(p,(1,2,3,0))
             # nrrd.write('./resultimage/output_%s.nrrd' % str(t),p)
             # p = (p[0]*255+0.5).astype(np.uint8)
             # p = np.transpose(p,(1,2,0))
@@ -98,19 +101,29 @@ def test(loader, agent, fout):
         I = np.minimum(1,I)
         # N = np.maximum(0,raw_y)
         # N = np.minimum(1,N)
+        #
         p = np.maximum(0,current_state.image)
         p = np.minimum(1,p)
+        p = p.squeeze()
+        I = I.squeeze()
+        I *= (2.**31)-1.
+        p = (p/p.max())*I.max()
+        # print(p.shape,I.shape)
         # print("p[0].max()",p[0].max()*)
-        I = (I[0]*MAX_INTENSITY+0.5).astype(np.uint32)
+        # I = (I[0]*MAX_INTENSITY+0.5).astype(np.uint32)
         # N = (N[0]*MAX_INTENSITY+0.5).astype(np.uint32)
-        p = (p[0]*MAX_INTENSITY+0.5).astype(np.uint32)
-        p = np.transpose(p,(1,2,3,0))
-        I = np.transpose(I,(1,2,3,0))
+        # p = (p[0]*MAX_INTENSITY+0.5).astype(np.uint32)
+        # p = np.transpose(p,(1,2,0))
+        # p = np.flip(p,1)
+        # I = np.flip(I,1)
+        # I = np.transpose(I,(1,2,0))
+        # p = np.transpose(p,(1,2,3,0))
+        # I = np.transpose(I,(1,2,3,0))
         # N = np.transpose(N,(1,2,3,0))
         # print(I.max(),I.min(),I.shape,MAX_INTENSITY)
         # print(p.max(),p.min(),p.shape,MAX_INTENSITY)
-        nrrd.write('./resultimage/input_final.nrrd',raw_x)
-        nrrd.write('./resultimage/output_final.nrrd',current_state.image)
+        nrrd.write('./resultimage/input_%d.nrrd'%i,I)
+        nrrd.write('./resultimage/output_%d.nrrd'%i,p)
         # cv2.imwrite('./resultimage/'+str(i)+'_input.png',I)
         # cv2.imwrite('./resultimage/'+str(i)+'_output.png',p)
         # cv2.imwrite('./resultimage/'+str(i)+'_label.png',N)

@@ -11,7 +11,7 @@ import os
 from pixelwise_a3c import *
 
 #_/_/_/ paths _/_/_/
-TRAINING_DATA_PATH          = os.path.join('..','adni3','train3')#"../training_BSD68.txt"
+TRAINING_DATA_PATH          = os.path.join('..','adni3','train2')#"../training_BSD68.txt"
 TESTING_DATA_PATH           = os.path.join('..','adni3','test2')
 # TESTING_DATA_PATH           = "../testing.txt"
 IMAGE_DIR_PATH              = "../"
@@ -22,7 +22,7 @@ LEARNING_RATE    = 0.001
 TRAIN_BATCH_SIZE = 16#32#64
 TEST_BATCH_SIZE  = 1 #must be 1
 N_EPISODES           = 30000
-EPISODE_LEN = 5#10#30#5
+EPISODE_LEN = 3#10#30#5
 SNAPSHOT_EPISODES  = 100
 TEST_EPISODES = 100
 GAMMA = 0.95 # discount factor
@@ -31,44 +31,44 @@ MAX_INTENSITY = (2**15)-1
 #noise setting
 MEAN = 0
 SIGMA = 80
-N_ACTIONS = 5#9
+N_ACTIONS = 6#9
 MOVE_RANGE = 5 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
 CROP_SIZE = 15#70
 
 GPU_ID = 0
 
-def test(loader, agent, fout):
-    return
-    sum_psnr     = 0
-    sum_reward = 0
-    test_data_size = 1#MiniBatchLoader.count_paths(TESTING_DATA_PATH)
-    current_state = State.State((TEST_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
-    for i in range(0, test_data_size, TEST_BATCH_SIZE):
-        raw_x, raw_y = loader.load_testing_data(np.array(range(i, i+TEST_BATCH_SIZE)))
-        raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/MAX_INTENSITY
-        current_state.reset(raw_x,raw_n)
-        # reward = np.zeros(raw_x.shape, raw_x.dtype)*MAX_INTENSITY
-        for t in range(0, EPISODE_LEN):
-            print(t, EPISODE_LEN)
-            previous_image = current_state.image.copy()
-            action, inner_state = agent.act(current_state.tensor)
-            current_state.step(action, inner_state)
-            # reward = np.square(raw_y - previous_image)*MAX_INTENSITY - np.square(raw_y - current_state.image)*MAX_INTENSITY
-            # sum_reward += np.mean(reward)*np.power(GAMMA,t)
-
-        agent.stop_episode()
-
-        I = np.maximum(0,raw_x)
-        I = np.minimum(1,I)
-        p = np.maximum(0,current_state.image)
-        p = np.minimum(1,p)
-        I = (I*MAX_INTENSITY+0.5).astype(np.uint32)
-        p = (p*MAX_INTENSITY+0.5).astype(np.uint32)
-        # sum_psnr += cv2.PSNR(p, I)
-
-    # print("test total reward {a}, PSNR {b}".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
-    # fout.write("test total reward {a}, PSNR {b}\n".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
-    # sys.stdout.flush()
+# def test(loader, agent, fout):
+#     return
+#     sum_psnr     = 0
+#     sum_reward = 0
+#     test_data_size = 1#MiniBatchLoader.count_paths(TESTING_DATA_PATH)
+#     current_state = State.State((TEST_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
+#     for i in range(0, test_data_size, TEST_BATCH_SIZE):
+#         raw_x, raw_y = loader.load_testing_data(np.array(range(i, i+TEST_BATCH_SIZE)))
+#         raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/MAX_INTENSITY
+#         current_state.reset(raw_x,raw_n)
+#         # reward = np.zeros(raw_x.shape, raw_x.dtype)*MAX_INTENSITY
+#         for t in range(0, EPISODE_LEN):
+#             print(t, EPISODE_LEN)
+#             previous_image = current_state.image.copy()
+#             action, inner_state = agent.act(current_state.tensor)
+#             current_state.step(action, inner_state)
+#             # reward = np.square(raw_y - previous_image)*MAX_INTENSITY - np.square(raw_y - current_state.image)*MAX_INTENSITY
+#             # sum_reward += np.mean(reward)*np.power(GAMMA,t)
+#
+#         agent.stop_episode()
+#
+#         I = np.maximum(0,raw_x)
+#         I = np.minimum(1,I)
+#         p = np.maximum(0,current_state.image)
+#         p = np.minimum(1,p)
+#         I = (I*MAX_INTENSITY+0.5).astype(np.uint32)
+#         p = (p*MAX_INTENSITY+0.5).astype(np.uint32)
+#         # sum_psnr += cv2.PSNR(p, I)
+#
+#     # print("test total reward {a}, PSNR {b}".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
+#     # fout.write("test total reward {a}, PSNR {b}\n".format(a=sum_reward*MAX_INTENSITY/test_data_size, b=sum_psnr/test_data_size))
+#     # sys.stdout.flush()
 
 
 def main(fout):

@@ -20,12 +20,17 @@ class State():
     def step(self, act, inner_state):
         # neutral = (self.move_range - 1)/2
         move = act.astype(np.float32)
+        # print(self.image.min(), self.image.max())
         # print(move)
 
-        move = np.where(move == 4,  0.01, move)
-        move = np.where(move == 3,  0.001, move)
-        move = np.where(move == 1, -0.001, move)
-        move = np.where(move == 0, -0.01, move)
+        # move = np.where(move == 4,  0.01, move)
+        # move = np.where(move == 3,  0.001, move)
+        # move = np.where(move == 1, -0.001, move)
+        # move = np.where(move == 0, -0.01, move)
+        move = np.where(move == 4,  0.05, move)
+        move = np.where(move == 3,  0.01, move)
+        move = np.where(move == 1, -0.01, move)
+        move = np.where(move == 0, -0.05, move)
         move = np.where(move == 2,  0, move)
         # print(move)
         # print(move.min(),move.max())
@@ -57,25 +62,36 @@ class State():
         bilateral2 = np.zeros(self.image.shape, self.image.dtype)
         median = np.zeros(self.image.shape, self.image.dtype)
         box = np.zeros(self.image.shape, self.image.dtype)
+        sharpen = np.zeros(self.image.shape, self.image.dtype)
+        sharpen2 = np.zeros(self.image.shape, self.image.dtype)
         #guided = np.zeros(self.image.shape, self.image.dtype)
         b, c, h, w, z = self.image.shape
         for i in range(0,b):
             if np.sum(act[i]==self.move_range) > 0:
-                gaussian[i,0] = cv2.GaussianBlur(self.image[i,0], ksize=(5,5), sigmaX=0.5)
-            if np.sum(act[i]==self.move_range+1) > 0:
-                bilateral[i,0] = cv2.bilateralFilter(self.image[i,0], d=5, sigmaColor=0.1, sigmaSpace=5)
-            if np.sum(act[i]==self.move_range+2) > 0:
-                median[i,0] = cv2.medianBlur(self.image[i,0], ksize=5)
-            if np.sum(act[i]==self.move_range+3) > 0:
-                gaussian2[i,0] = cv2.GaussianBlur(self.image[i,0], ksize=(5,5), sigmaX=1.5)
-            if np.sum(act[i]==self.move_range+4) > 0:
-                bilateral2[i,0] = cv2.bilateralFilter(self.image[i,0], d=5, sigmaColor=1.0, sigmaSpace=5)
-            if np.sum(act[i]==self.move_range+5) > 0:
-                box[i,0] = cv2.boxFilter(self.image[i,0], ddepth=-1, ksize=(5,5))
+                kernel = np.array([[0,-1,0],[-1,5,-1],[0,-1,0]])
+                sharpen[i,0] = cv2.filter2D(self.image[i,0],-1,kernel)
+            # if np.sum(act[i]==self.move_range+1) > 0:
+            #     kernel = np.array([[0,-1,0],[-1,9,-1],[0,-1,0]])
+            #     sharpen2[i,0] = cv2.filter2D(self.image[i,0],-1,kernel)
+            # if np.sum(act[i]==self.move_range+1) > 0:
+            #     gaussian[i,0] = cv2.GaussianBlur(self.image[i,0], ksize=(5,5), sigmaX=0.5)
+            # if np.sum(act[i]==self.move_range+1) > 0:
+            #     bilateral[i,0] = cv2.bilateralFilter(self.image[i,0], d=5, sigmaColor=0.1, sigmaSpace=5)
+            # if np.sum(act[i]==self.move_range+2) > 0:
+            #     median[i,0] = cv2.medianBlur(self.image[i,0], ksize=5)
+            # if np.sum(act[i]==self.move_range+3) > 0:
+            #     gaussian2[i,0] = cv2.GaussianBlur(self.image[i,0], ksize=(5,5), sigmaX=1.5)
+            # if np.sum(act[i]==self.move_range+4) > 0:
+            #     bilateral2[i,0] = cv2.bilateralFilter(self.image[i,0], d=5, sigmaColor=1.0, sigmaSpace=5)
+            # if np.sum(act[i]==self.move_range+5) > 0:
+            #     box[i,0] = cv2.boxFilter(self.image[i,0], ddepth=-1, ksize=(5,5))
             #if np.sum(act[i]==self.move_range+3) > 0:
             #    guided[i,0] = cv2.ximgproc.guidedFilter(self.image[i,0], self.image[i,0], radius=2, eps=0.01)
 
         self.image = moved_image
+        self.image = np.where(act[:,np.newaxis,:,:]==self.move_range,sharpen,self.image)
+        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+1,sharpen2,self.image)
+        self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+1,gaussian,self.image)
         # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range, gaussian, self.image)
         # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+1, bilateral, self.image)
         # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+2, median, self.image)
