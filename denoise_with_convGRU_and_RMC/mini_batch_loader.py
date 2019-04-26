@@ -241,7 +241,6 @@ class MiniBatchLoader(object):
                 return xs, ys#, imgAff, labelAff, imgInvWarp, labelWarp, imgITK, labelITK, atlasITK
 
         elif mini_batch_size == 1:
-            print("HEEEEERE")
             for i, index in enumerate(indices):
                 path = path_infos[index]
                 # labelPath = labelPathFromPath(path)
@@ -251,10 +250,11 @@ class MiniBatchLoader(object):
                 if img is None:# or labelImg is None:
                     raise RuntimeError("invalid image: {i}".format(i=path))
 
-            if img.max() > 0:
-                img = img.astype(np.float32)
+            # if img.max() > 0:
+            img = img.astype(np.float32)
+            ogMax = img.max()
                 # labelImg = labelImg.astype(np.float32)
-                img = (img / img.max())
+                # img = (img / img.max())
                 # labelImg = (labelImg / labelImg.max())
 
             x, y, z = img.shape
@@ -265,7 +265,7 @@ class MiniBatchLoader(object):
             # ys[0, 0, :, :, :] = (labelImg/MAX_INTENSITY).astype(np.float32)
             ys = None
 
-            return xs, ys
+            return xs, ys, ogMax
 
         else:
             raise RuntimeError("mini batch size must be 1 when testing")

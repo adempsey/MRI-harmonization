@@ -22,7 +22,7 @@ LEARNING_RATE    = 0.001
 TRAIN_BATCH_SIZE = 16#32#64
 TEST_BATCH_SIZE  = 1 #must be 1
 N_EPISODES           = 30000
-EPISODE_LEN = 3#10#30#5
+EPISODE_LEN = 10#30#5
 SNAPSHOT_EPISODES  = 100
 TEST_EPISODES = 100
 GAMMA = 0.95 # discount factor
@@ -31,8 +31,8 @@ MAX_INTENSITY = (2**15)-1
 #noise setting
 MEAN = 0
 SIGMA = 80
-N_ACTIONS = 6#9
-MOVE_RANGE = 5 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
+N_ACTIONS = 9
+MOVE_RANGE = 9 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
 CROP_SIZE = 15#70
 
 GPU_ID = 0
@@ -98,6 +98,7 @@ def main(fout):
     train_data_size = MiniBatchLoader.count_paths(TRAINING_DATA_PATH)
     indices = np.random.permutation(train_data_size)
     i = 0
+    rewardtrack = []
     for episode in range(1, N_EPISODES+1):
         # display current state
         print("episode %d" % episode)
@@ -148,10 +149,10 @@ def main(fout):
         raw_y *= (2**15)-1
         output = current_state.image * (2**15)-1
         # print(np.max(raw_x),np.max(raw_y), np.max(output))
-        if episode % 100 == 0:
-            nrrd.write('./trainoutput/%d_input.nrrd'%episode,raw_x)
-            nrrd.write('./trainoutput/%d_target.nrrd'%episode,raw_y)
-            nrrd.write('./trainoutput/%d_output.nrrd'%episode,output)
+        # if episode % 100 == 0:
+        #     nrrd.write('./trainoutput/%d_input.nrrd'%episode,raw_x)
+        #     nrrd.write('./trainoutput/%d_target.nrrd'%episode,raw_y)
+        #     nrrd.write('./trainoutput/%d_output.nrrd'%episode,output)
         # cv2.imwrite('./resultimage/'+str(i)+'_input.png',I)
         # cv2.imwrite('./resultimage/'+str(i)+'_output.png',p)
         # cv2.imwrite('./resultimage/'+str(i)+'_label.png',N)
@@ -161,12 +162,18 @@ def main(fout):
 
         agent.stop_episode_and_train(current_state.tensor, reward, True)
         print("train total reward {a}".format(a=sum_reward*MAX_INTENSITY))
-        fout.write("train total reward {a}\n".format(a=sum_reward*MAX_INTENSITY))
+        fout.write("train total reward {a}\n".format(a=sum_reward))
         sys.stdout.flush()
+        rewardtrack.append(sum_reward*MAX_INTENSITY)
 
-        if episode % TEST_EPISODES == 0:
-            #_/_/_/ testing _/_/_/
-            test(mini_batch_loader, agent, fout)
+        if episode % 50 == 0:
+            s = np.array(rewardtrack)
+            print("avg: %f, std_dev: %f" % (np.mean(s), np.var(s)))
+            rewardtrack = []
+
+        # if episode % TEST_EPISODES == 0:
+        #     #_/_/_/ testing _/_/_/
+        #     test(mini_batch_loader, agent, fout)
 
         if episode % SNAPSHOT_EPISODES == 0:
             agent.save(SAVE_PATH+str(episode))

@@ -14,7 +14,7 @@ import nrrd
 #_/_/_/ paths _/_/_/
 TRAINING_DATA_PATH          = os.path.join('..','adni3','train2')
 # TRAINING_DATA_PATH          = "../training_BSD68.txt"
-TESTING_DATA_PATH           = os.path.join('..','adni3','test3')
+TESTING_DATA_PATH           = os.path.join('..','adni3','test2')
 # TESTING_DATA_PATH           = "../testing_1.txt"
 IMAGE_DIR_PATH              = "../"
 SAVE_PATH            = "./model/denoise_myfcn_3d_"
@@ -24,7 +24,7 @@ LEARNING_RATE    = 0.001
 TRAIN_BATCH_SIZE = 64
 TEST_BATCH_SIZE  = 1 #must be 1
 N_EPISODES           = 1000#30000
-EPISODE_LEN = 3#5
+EPISODE_LEN = 10#5
 GAMMA = 0.95 # discount factor
 MAX_INTENSITY = (2**15)-1#32767
 
@@ -32,8 +32,8 @@ MAX_INTENSITY = (2**15)-1#32767
 MEAN = 0
 SIGMA = 80
 
-N_ACTIONS = 6#9
-MOVE_RANGE = 5 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
+N_ACTIONS = 9#9
+MOVE_RANGE = 9 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
 CROP_SIZE = 15#70
 
 GPU_ID = 0
@@ -45,7 +45,7 @@ def test(loader, agent, fout):
     current_state = State.State((TEST_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
     # for i in range(0, test_data_size, TEST_BATCH_SIZE):
     for i in range(0, 5, TEST_BATCH_SIZE):
-        raw_x, raw_y = loader.load_testing_data(np.array(range(i, i+TEST_BATCH_SIZE)))
+        raw_x, raw_y, ogMax = loader.load_testing_data(np.array(range(i, i+TEST_BATCH_SIZE)))
         # print(raw_y.max(),raw_x.max())
         raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/MAX_INTENSITY
         current_state.reset(raw_x,raw_n)
@@ -58,24 +58,22 @@ def test(loader, agent, fout):
             # actionMap = np.stack((action,)*3, axis=-1).squeeze()
 
             # def actionToColor(a):
-            #     if a[0] == 0:
-            #         return np.array([255, 255, 255])
-            #     if a[0] == 1:
-            #         return np.array([128, 128, 128])
-            #     if a[0] == 2:
-            #         return np.array([0, 0, 0])
-            #     if a[0] == 3:
-            #         return np.array([255, 0, 0])
-            #     if a[0] == 4:
-            #         return np.array([255, 255, 255])
-            #     if a[0] == 5:
-            #         return np.array([255, 255, 0])
-            #     if a[0] == 6:
-            #         return np.array([0, 128, 128])
-            #     if a[0] == 7:
-            #         return np.array([128, 0, 128])
-            #     if a[0] == 8:
-            #         return np.array([0, 128, 255])
+            #     if a[0] == 0: # Big decrement
+            #         return np.array([255, 0, 0]) #FF0000
+            #     if a[0] == 1: # Little decrement
+            #         return np.array([255, 0, 255]) #FF00FF
+            #     if a[0] == 2: # Nothing
+            #         return np.array([0, 0, 0]) #000000
+            #     if a[0] == 3: # Little increment
+            #         return np.array([0, 255, 255]) #00FFFF
+            #     if a[0] == 4: # Big increment
+            #         return np.array([0, 0, 255]) #0000FF
+            #     if a[0] == 5: # Sharpen
+            #         return np.array([0, 255, 0]) #00FF00
+            #     if a[0] == 6: # Blur
+            #         return np.array([255, 40, 0]) #FFAA00
+                # if a[0] == 7:
+                #     return np.array([128, 0, 128])
             #
             # actionMap = np.apply_along_axis(actionToColor, 2, actionMap)
             # print(current_state.image.max())
@@ -93,6 +91,7 @@ def test(loader, agent, fout):
             # p = (p[0]*255+0.5).astype(np.uint8)
             # p = np.transpose(p,(1,2,0))
             # cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_output.png',p)
+            # np.save('./resultimage/actions',action)
             # cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_action.png',actionMap)
 
         agent.stop_episode()
@@ -106,8 +105,8 @@ def test(loader, agent, fout):
         p = np.minimum(1,p)
         p = p.squeeze()
         I = I.squeeze()
-        I *= (2.**31)-1.
-        p = (p/p.max())*I.max()
+        # I *= (2.**15)-1.
+        p = (p/p.max())*ogMax
         # print(p.shape,I.shape)
         # print("p[0].max()",p[0].max()*)
         # I = (I[0]*MAX_INTENSITY+0.5).astype(np.uint32)
