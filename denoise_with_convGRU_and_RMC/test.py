@@ -14,7 +14,7 @@ import nrrd
 #_/_/_/ paths _/_/_/
 TRAINING_DATA_PATH          = os.path.join('..','adni3','train2')
 # TRAINING_DATA_PATH          = "../training_BSD68.txt"
-TESTING_DATA_PATH           = os.path.join('..','adni3','test2')
+TESTING_DATA_PATH           = os.path.join('..','adni3','test3')
 # TESTING_DATA_PATH           = "../testing_1.txt"
 IMAGE_DIR_PATH              = "../"
 SAVE_PATH            = "./model/denoise_myfcn_3d_"
@@ -106,6 +106,7 @@ def test(loader, agent, fout):
         p = p.squeeze()
         I = I.squeeze()
         # I *= (2.**15)-1.
+        I = (I/I.max())*ogMax
         p = (p/p.max())*ogMax
         # print(p.shape,I.shape)
         # print("p[0].max()",p[0].max()*)
