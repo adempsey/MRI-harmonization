@@ -15,7 +15,7 @@ import nrrd
 TRAINING_DATA_PATH          = os.path.join('..','adni3','train2')
 TESTING_DATA_PATH           = os.path.join('..','adni3','test_action_sample')
 IMAGE_DIR_PATH              = "../"
-SAVE_PATH            = "./model/denoise_myfcn_3d_"
+SAVE_PATH            = "./model/weights_"
 
 #_/_/_/ training parameters _/_/_/
 LEARNING_RATE    = 0.001
@@ -89,7 +89,7 @@ def main(fout):
     optimizer.setup(model)
 
     agent = PixelWiseA3C_InnerState_ConvR(model, optimizer, EPISODE_LEN, GAMMA)
-    chainer.serializers.load_npz('./model/denoise_myfcn_3d_30000/model.npz', agent.model)
+    chainer.serializers.load_npz('./model/pretrained_30000/model.npz', agent.model)
     agent.act_deterministically = True
     agent.model.to_gpu()
 
