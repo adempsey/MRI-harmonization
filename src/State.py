@@ -8,7 +8,7 @@ class State():
         self.move_range = move_range
 
     def reset(self, x, n):
-        self.image = x#+n
+        self.image = x
         size = self.image.shape
         prev_state = np.zeros((size[0],16,size[2],size[3],size[4]),dtype=np.float32)
         self.tensor = np.concatenate((self.image, prev_state), axis=1)
@@ -18,30 +18,22 @@ class State():
         self.tensor[:,:self.image.shape[1],:,:,:] = self.image
 
     def step(self, act, inner_state):
-        # neutral = (self.move_range - 1)/2
         move = act.astype(np.float32)
-        moveLabels = move.copy()
+        # moveLabels = move.copy()
+        #
+        # moveLabels = np.where(move == 5,  "+1", moveLabels)
+        # moveLabels = np.where(move == 6,  "-1", moveLabels)
+        # moveLabels = np.where(move == 7,  "-1000", moveLabels)
+        # moveLabels = np.where(move == 8,  "+1000", moveLabels)
+        # moveLabels = np.where(move == 4,  "+100", moveLabels)
+        # moveLabels = np.where(move == 3,  "+10", moveLabels)
+        # moveLabels = np.where(move == 1, "-10", moveLabels)
+        # moveLabels = np.where(move == 0, "-100", moveLabels)
+        # moveLabels = np.where(move == 2,  "0", moveLabels)
+        #
+        # uni, counts = np.unique(moveLabels, return_counts=True)
+        # print(dict(zip(uni,counts)))
 
-        moveLabels = np.where(move == 5,  "+1", moveLabels)
-        moveLabels = np.where(move == 6,  "-1", moveLabels)
-        moveLabels = np.where(move == 7,  "-1000", moveLabels)
-        moveLabels = np.where(move == 8,  "+1000", moveLabels)
-        moveLabels = np.where(move == 4,  "+100", moveLabels)
-        moveLabels = np.where(move == 3,  "+10", moveLabels)
-        moveLabels = np.where(move == 1, "-10", moveLabels)
-        moveLabels = np.where(move == 0, "-100", moveLabels)
-        moveLabels = np.where(move == 2,  "0", moveLabels)
-        moveLabels = np.where(move == 9,  "blur", moveLabels)
-
-        uni, counts = np.unique(moveLabels, return_counts=True)
-        print(dict(zip(uni,counts)))
-        # print(self.image.min(), self.image.max())
-        # print(move)
-
-        # move = np.where(move == 4,  0.01, move)
-        # move = np.where(move == 3,  0.001, move)
-        # move = np.where(move == 1, -0.001, move)
-        # move = np.where(move == 0, -0.01, move)
         move = np.where(move == 8,  0.01, move)
         move = np.where(move == 7,  -0.01, move)
         move = np.where(move == 5,  0.000001, move)
@@ -51,75 +43,11 @@ class State():
         move = np.where(move == 1, -0.00001, move)
         move = np.where(move == 0, -0.0001, move)
         move = np.where(move == 2,  0, move)
-        # print(move)
-        # print(move.min(),move.max())
-        # move = (move - neutral)/100#/((2**15)-1))# * 1000
-        # print(move)
-        # print(move)
-        # move = np.where(move == 2, 1.05, move)
-        # print(self.image.shape)
-        # print(self.image.min(),self.image.max())
-        # move = np.where(move == 1,0.05, move)
-        # move = np.where(move == 0, 1., move)
-        # move = np.where(move == -1, -0.05, move)
-        # move = np.where(move == 1, 1.05, move)
-        # move = np.where(move == 0, 1., move)
-        # move = np.where(move == -1, 0.95, move)
-        # move = np.where(move == -2, -1.05, move)
-        # print(move.min(),move.max())
-        # print(self.image.min(),self.image.max())
-        # print("**")
-        # print(move)
-        # print("currentimg",self.image.min(),self.image.max(),np.mean(self.image))
+
         moved_image = self.image + move[:,np.newaxis,:,:]
-        # moved_image = np.clip(moved_image, 0, (2**15)-1)
-        # print(moved_image)
-        # moved_image = np.multiply(self.image, move[:,np.newaxis,:,:])
-        gaussian = np.zeros(self.image.shape, self.image.dtype)
-        gaussian2 = np.zeros(self.image.shape, self.image.dtype)
-        bilateral = np.zeros(self.image.shape, self.image.dtype)
-        bilateral2 = np.zeros(self.image.shape, self.image.dtype)
-        median = np.zeros(self.image.shape, self.image.dtype)
-        box = np.zeros(self.image.shape, self.image.dtype)
-        sharpen = np.zeros(self.image.shape, self.image.dtype)
-        sharpen2 = np.zeros(self.image.shape, self.image.dtype)
-        #guided = np.zeros(self.image.shape, self.image.dtype)
-        b, c, h, w, z = self.image.shape
-        for i in range(0,b):
-            # if np.sum(act[i]==self.move_range) > 0:
-            #     kernel = np.array([[-1.,-1.,-1.],[-1.,9.,-1.],[-1.,-1.,-1.]])
-            #     sharpen[i,0] = cv2.filter2D(self.image[i,0],-1,kernel)
-            # if np.sum(act[i]==self.move_range+1) > 0:
-            #     kernel = np.array([[0,-1,0],[-1,9,-1],[0,-1,0]])
-            #     sharpen2[i,0] = cv2.filter2D(self.image[i,0],-1,kernel)
-            # if np.sum(act[i]==self.move_range) > 0:
-                # median[i,0] = cv2.medianBlur(self.image[i,0], ksize=3)
-            # if np.sum(act[i]==self.move_range+1) > 0:
-            #     bilateral[i,0] = cv2.bilateralFilter(self.image[i,0], d=5, sigmaColor=0.1, sigmaSpace=5)
-            # if np.sum(act[i]==self.move_range+2) > 0:
-            #     median[i,0] = cv2.medianBlur(self.image[i,0], ksize=5)
-            if np.sum(act[i]==self.move_range) > 0:
-                gaussian[i,0] = cv2.GaussianBlur(self.image[i,0], ksize=(5,5), sigmaX=1.5)
-            # if np.sum(act[i]==self.move_range+4) > 0:
-            #     bilateral2[i,0] = cv2.bilateralFilter(self.image[i,0], d=5, sigmaColor=1.0, sigmaSpace=5)
-            # if np.sum(act[i]==self.move_range+5) > 0:
-            #     box[i,0] = cv2.boxFilter(self.image[i,0], ddepth=-1, ksize=(5,5))
-            #if np.sum(act[i]==self.move_range+3) > 0:
-            #    guided[i,0] = cv2.ximgproc.guidedFilter(self.image[i,0], self.image[i,0], radius=2, eps=0.01)
 
         self.image = moved_image
-        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range,sharpen,self.image)
-        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+1,sharpen2,self.image)
         self.image = np.where(act[:,np.newaxis,:,:]==self.move_range,gaussian,self.image)
-        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range, gaussian, self.image)
-        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+1, bilateral, self.image)
-        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+2, median, self.image)
-        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+3, gaussian2, self.image)
-        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+4, bilateral2, self.image)
-        # self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+5, box, self.image)
-        #self.image = np.where(act[:,np.newaxis,:,:]==self.move_range+3, guided, self.image)
-
-        # self.image = np.clip(self.image, 0, (2**15)-1)
 
         self.tensor[:,:self.image.shape[1],:,:,:] = self.image
         self.tensor[:,-16:,:,:,:] = inner_state

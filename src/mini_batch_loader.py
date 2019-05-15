@@ -33,26 +33,17 @@ class MiniBatchLoader(object):
     @staticmethod
     def count_paths(path):
         return len([n for n in os.listdir(path) if os.path.splitext(n)[1] == '.nii'])
-        # c = 0
-        # for _ in open(path):
-        #     c += 1
-        # return c
 
     # test ok
     @staticmethod
     def read_paths(txt_path):
         return glob(os.path.join(txt_path,"*.nii"))
-        # cs = []
-        # for pair in MiniBatchLoader.path_label_generator(txt_path, src_path):
-        #     cs.append(pair)
-        # return cs
 
     def load_training_data(self, indices):
         return self.load_data(self.training_path_infos, indices, augment=True)
 
     def load_testing_data(self, indices):
         return self.load_data(self.testing_path_infos, indices)
-        # return self.load_data(self.testing_path_infos, indices)
 
     def antsmat2mat(self, mat):
         finalMat = np.zeros((4,4))
@@ -124,8 +115,6 @@ class MiniBatchLoader(object):
 
         return np.array(dst_coord_vox)
 
-
-    # test ok
     def load_data(self, path_infos, indices, augment=False):
         mini_batch_size = len(indices)
         in_channels = 1
@@ -159,10 +148,7 @@ class MiniBatchLoader(object):
 
             for i, index in enumerate(indices):
                 path = path_infos[index]
-                # path = os.path.join('..','adni3','train2','ss_002_S_1018_2006-11-29_10_09_05.0.nii')
-                # path = os.path.join('..','adni3','train2','ss_002_S_1261_2009-02-05_10_32_22.0.nii')
                 labelPath = labelPathFromPath(path)
-                # labelPath = os.path.join('..','adni3','label2','ss_002_S_1261_2007-02-27_13_40_08.0.nii')
                 affPath, warpPath, invWarpPath = transformPathsFromPath(path)
                 labelAffPath, labelWarpPath, labelInvWarpPath = transformPathsFromPath(labelPath)
                 atlasPath = atlasPathFromPath(path)
@@ -182,17 +168,6 @@ class MiniBatchLoader(object):
                 if img is None or labelImg is None:
                     raise RuntimeError("invalid image: {i}".format(i=path))
                 x, y, z = img.shape
-                # if np.random.rand() > 0.5:
-                #     img = np.fliplr(img)
-                #     labelImg = np.fliplr(labelImg)
-
-                # if np.random.rand() > 0.5:
-                #     angle = 10*np.random.rand()
-                #     if np.random.rand() > 0.5:
-                #         angle *= -1
-                #     M = cv2.getRotationMatrix2D((w/2,h/2),angle,1)
-                #     img = cv2.warpAffine(img,M,(w,h))
-                #     labelImg = cv2.warpAffine(labelImg,M,(w,h))
 
                 xRange = 20
                 yRange = 70
@@ -205,8 +180,6 @@ class MiniBatchLoader(object):
                 y_offset = np.random.randint(rand_range_y)+yRange
                 z_offset = np.random.randint(rand_range_z)+zRange
 
-                # print(i,x_offset,y_offset,z_offset)
-
                 img = img[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
 
                 labelImgWarped = np.zeros((self.crop_size,self.crop_size,self.crop_size))
@@ -215,11 +188,8 @@ class MiniBatchLoader(object):
                         for k in range(self.crop_size):
                             originPoint = [x_offset+i,y_offset+j,z_offset+k]
                             refPoint = self.transformPoint(originPoint, imgAff, labelAff, imgInvWarp, labelWarp, imgITK, labelITK, atlasITK)
-                            # print(path, labelPath, originPoint, refPoint)
                             labelImgWarped[i,j,k] = labelImg[refPoint[0],refPoint[1],refPoint[2]]
 
-                # labelImg = labelImg[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
-                # print(x_offset,y_offset,z_offset, img.min(), img.max())
                 labelImg = labelImgWarped
 
                 if img.max() > 0 and labelImg.max() > 0:
@@ -231,43 +201,27 @@ class MiniBatchLoader(object):
                     img = np.zeros(img.shape)
                     labelImg = np.zeros(labelImg.shape)
 
-                # nrrd.write('./uh/original.nrrd',img)
-                # nrrd.write('./uh/warpy.nrrd',labelImg)
-
-                # print(x_offset,y_offset,z_offset, img.min(),img.max(), labelImg.min(), labelImg.max())
-
-                xs[i, 0, :, :, :] = img.astype(np.float32)#(img/MAX_INTENSITY).astype(np.float32)
-                ys[i, 0, :, :, :] = labelImg.astype(np.float32)#(labelImg/MAX_INTENSITY).astype(np.float32)
-                return xs, ys#, imgAff, labelAff, imgInvWarp, labelWarp, imgITK, labelITK, atlasITK
+                xs[i, 0, :, :, :] = img.astype(np.float32)
+                ys[i, 0, :, :, :] = labelImg.astype(np.float32)
+                return xs, ys
 
         elif mini_batch_size == 1:
             for i, index in enumerate(indices):
                 path = path_infos[index]
-                # labelPath = labelPathFromPath(path)
 
                 img = np.array(nib.load(path).dataobj)
-                # labelImg = np.array(nib.load(labelPath).dataobj)
-                if img is None:# or labelImg is None:
+                if img is None:
                     raise RuntimeError("invalid image: {i}".format(i=path))
 
-            # if img.max() > 0:
             img = img.astype(np.float32)
             ogMax = img.max()
-                # labelImg = labelImg.astype(np.float32)
-                # img = (img / img.max())
-                # labelImg = (labelImg / labelImg.max())
 
             x, y, z = img.shape
             xs = np.zeros((mini_batch_size, in_channels, x, y, z)).astype(np.float32)
-            # ys = np.zeros((mini_batch_size, in_channels, x, y, z)).astype(np.float32)
-            # xs[0, 0, :, :, :] = (img/MAX_INTENSITY).astype(np.float32)
             xs[0, 0, :, :, :] = (img/img.max()).astype(np.float32)
-            # ys[0, 0, :, :, :] = (labelImg/MAX_INTENSITY).astype(np.float32)
             ys = None
 
             return xs, ys, ogMax
 
         else:
             raise RuntimeError("mini batch size must be 1 when testing")
-
-        # return xs, ys
