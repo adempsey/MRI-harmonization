@@ -14,7 +14,7 @@ import nrrd
 #_/_/_/ paths _/_/_/
 TRAINING_DATA_PATH          = os.path.join('..','adni3','train2')
 # TRAINING_DATA_PATH          = "../training_BSD68.txt"
-TESTING_DATA_PATH           = os.path.join('..','adni3','test3')
+TESTING_DATA_PATH           = os.path.join('..','adni3','test_action_sample')
 # TESTING_DATA_PATH           = "../testing_1.txt"
 IMAGE_DIR_PATH              = "../"
 SAVE_PATH            = "./model/denoise_myfcn_3d_"
@@ -44,7 +44,7 @@ def test(loader, agent, fout):
     test_data_size = MiniBatchLoader.count_paths(TESTING_DATA_PATH)
     current_state = State.State((TEST_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
     # for i in range(0, test_data_size, TEST_BATCH_SIZE):
-    for i in range(0, 5, TEST_BATCH_SIZE):
+    for i in range(0, 1, TEST_BATCH_SIZE):
         raw_x, raw_y, ogMax = loader.load_testing_data(np.array(range(i, i+TEST_BATCH_SIZE)))
         # print(raw_y.max(),raw_x.max())
         raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/MAX_INTENSITY
@@ -91,7 +91,12 @@ def test(loader, agent, fout):
             # p = (p[0]*255+0.5).astype(np.uint8)
             # p = np.transpose(p,(1,2,0))
             # cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_output.png',p)
-            # np.save('./resultimage/actions',action)
+            np.save('./resultimage/actions_%d' % t,action)
+            p = np.maximum(0,current_state.image)
+            p = np.minimum(1,p)
+            p = p.squeeze()
+            p = (p/p.max())*ogMax
+            np.save('./resultimage/img_%d' % t,current_state.image)
             # cv2.imwrite('./resultimage/'+str(i)+'_'+str(t)+'_action.png',actionMap)
 
         agent.stop_episode()

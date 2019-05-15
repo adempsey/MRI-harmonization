@@ -11,7 +11,7 @@ import os
 from pixelwise_a3c import *
 
 #_/_/_/ paths _/_/_/
-TRAINING_DATA_PATH          = os.path.join('..','adni3','train2')#"../training_BSD68.txt"
+TRAINING_DATA_PATH          = os.path.join('..','adni3','train3')#"../training_BSD68.txt"
 TESTING_DATA_PATH           = os.path.join('..','adni3','test2')
 # TESTING_DATA_PATH           = "../testing.txt"
 IMAGE_DIR_PATH              = "../"
@@ -91,6 +91,7 @@ def main(fout):
     optimizer.setup(model)
 
     agent = PixelWiseA3C_InnerState_ConvR(model, optimizer, EPISODE_LEN, GAMMA)
+    chainer.serializers.load_npz('./model/denoise_myfcn_3d_30000/model.npz', agent.model)
     agent.model.to_gpu()
 
     #_/_/_/ training _/_/_/
