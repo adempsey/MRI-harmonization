@@ -1,6 +1,4 @@
 .DS_Store
-BSD68/
-adni/
+data/
 env/
 *.pyc
-adni3/
