@@ -7,34 +7,20 @@ import random
 from scipy import io
 import itk
 import nrrd
-
-MAX_INTENSITY = float((2**15)-1)
+from config import *
 
 class MiniBatchLoader(object):
 
-    def __init__(self, train_path, test_path, image_dir_path, crop_size):
-
-        # load data paths
+    def __init__(self, train_path, test_path, crop_size):
         self.training_path_infos = self.read_paths(train_path)
         self.testing_path_infos = self.read_paths(test_path)
 
         self.crop_size = crop_size
 
-    # test ok
-    @staticmethod
-    def path_label_generator(txt_path, src_path):
-        for line in open(txt_path):
-            line = line.strip()
-            src_full_path = os.path.join(src_path, line)
-            if os.path.isfile(src_full_path):
-                yield src_full_path
-
-    # test ok
     @staticmethod
     def count_paths(path):
         return len([n for n in os.listdir(path) if os.path.splitext(n)[1] == '.nii'])
 
-    # test ok
     @staticmethod
     def read_paths(txt_path):
         return glob(os.path.join(txt_path,"*.nii"))
@@ -121,7 +107,7 @@ class MiniBatchLoader(object):
         def labelPathFromPath(path):
             fName = os.path.basename(path)
             subject = fName[3:13]
-            labels = glob(os.path.join(os.path.dirname(path),'..','label2','ss_%s*.nii' % subject))
+            labels = glob(os.path.join(TARGET_DATA_PATH,'ss_%s*.nii' % subject))
             labelPath = random.choice(labels)
 
             return labelPath
@@ -131,16 +117,16 @@ class MiniBatchLoader(object):
             subject = fName[3:13]
             full = fName[:-4]
 
-            affPath = glob(os.path.join(os.path.dirname(path),'..','transforms',subject,'antsBTP%s*.mat' % full))[0]
-            warpPath = glob(os.path.join(os.path.dirname(path),'..','transforms',subject,'antsBTP%s*[0-9]Warp.nii' % full))[0]
-            invWarpPath = glob(os.path.join(os.path.dirname(path),'..','transforms',subject,'antsBTP%s*InverseWarp.nii' % full))[0]
+            affPath = glob(os.path.join(TRANSFORMATION_DATA_PATH,subject,'antsBTP%s*.mat' % full))[0]
+            warpPath = glob(os.path.join(TRANSFORMATION_DATA_PATH,subject,'antsBTP%s*[0-9]Warp.nii' % full))[0]
+            invWarpPath = glob(os.path.join(TRANSFORMATION_DATA_PATH,subject,'antsBTP%s*InverseWarp.nii' % full))[0]
 
             return affPath, warpPath, invWarpPath
 
         def atlasPathFromPath(path):
             fName = os.path.basename(path)
             subject = fName[3:13]
-            return os.path.join(os.path.dirname(path),'..','atlases',subject,'antsBTPtemplate0.nii')
+            return os.path.join(ATLAS_PATH,subject,'antsBTPtemplate0.nii')
 
         if augment:
             xs = np.zeros((mini_batch_size, in_channels, self.crop_size, self.crop_size, self.crop_size)).astype(np.float32)

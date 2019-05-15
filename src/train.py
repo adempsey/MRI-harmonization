@@ -6,47 +6,21 @@ import sys
 import math
 import time
 import chainerrl
-import State
+import state
 import os
 from pixelwise_a3c import *
-
-#_/_/_/ paths _/_/_/
-TRAINING_DATA_PATH          = os.path.join('..','adni3','train3')
-TESTING_DATA_PATH           = os.path.join('..','adni3','test2')
-IMAGE_DIR_PATH              = "../"
-SAVE_PATH            = "./model/denoise_myfcn_3d_"
-
-#_/_/_/ training parameters _/_/_/
-LEARNING_RATE    = 0.001
-TRAIN_BATCH_SIZE = 16
-TEST_BATCH_SIZE  = 1 #must be 1
-N_EPISODES           = 30000
-EPISODE_LEN = 10
-SNAPSHOT_EPISODES  = 100
-TEST_EPISODES = 100
-GAMMA = 0.95 # discount factor
-MAX_INTENSITY = (2**15)-1
-
-#noise setting
-MEAN = 0
-SIGMA = 80
-N_ACTIONS = 9
-MOVE_RANGE = 9 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
-CROP_SIZE = 15
-
-GPU_ID = 0
+from config import *
 
 def main(fout):
     #_/_/_/ load dataset _/_/_/
     mini_batch_loader = MiniBatchLoader(
         TRAINING_DATA_PATH,
         TESTING_DATA_PATH,
-        IMAGE_DIR_PATH,
         CROP_SIZE)
 
     chainer.cuda.get_device_from_id(GPU_ID).use()
 
-    current_state = State.State((TRAIN_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
+    current_state = state.State((TRAIN_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
 
     # load myfcn model
     model = Network(N_ACTIONS)
@@ -56,7 +30,6 @@ def main(fout):
     optimizer.setup(model)
 
     agent = PixelWiseA3C_InnerState_ConvR(model, optimizer, EPISODE_LEN, GAMMA)
-    chainer.serializers.load_npz('./model/denoise_myfcn_3d_30000/model.npz', agent.model)
     agent.model.to_gpu()
 
     #_/_/_/ training _/_/_/

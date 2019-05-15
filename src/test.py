@@ -6,47 +6,22 @@ import sys
 import math
 import time
 import chainerrl
-import State
+import state
 import os
 from pixelwise_a3c import *
 import nrrd
-
-#_/_/_/ paths _/_/_/
-TRAINING_DATA_PATH          = os.path.join('..','adni3','train2')
-TESTING_DATA_PATH           = os.path.join('..','adni3','test_action_sample')
-IMAGE_DIR_PATH              = "../"
-SAVE_PATH            = "./model/weights_"
-
-#_/_/_/ training parameters _/_/_/
-LEARNING_RATE    = 0.001
-TRAIN_BATCH_SIZE = 64
-TEST_BATCH_SIZE  = 1 #must be 1
-N_EPISODES           = 1000#30000
-EPISODE_LEN = 10#5
-GAMMA = 0.95 # discount factor
-MAX_INTENSITY = (2**15)-1#32767
-
-#noise setting
-MEAN = 0
-SIGMA = 80
-
-N_ACTIONS = 9#9
-MOVE_RANGE = 9 #number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.
-CROP_SIZE = 15#70
-
-GPU_ID = 0
+from config import *
 
 def test(loader, agent, fout):
     sum_psnr     = 0
     sum_reward = 0
     test_data_size = MiniBatchLoader.count_paths(TESTING_DATA_PATH)
-    current_state = State.State((TEST_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
+    current_state = state.State((TEST_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
     for i in range(0, 1, TEST_BATCH_SIZE):
         raw_x, raw_y, ogMax = loader.load_testing_data(np.array(range(i, i+TEST_BATCH_SIZE)))
         raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/MAX_INTENSITY
         current_state.reset(raw_x,raw_n)
         reward = np.zeros(raw_x.shape, raw_x.dtype)*MAX_INTENSITY
-
 
         for t in range(0, EPISODE_LEN):
             previous_image = current_state.image.copy()
@@ -63,8 +38,8 @@ def test(loader, agent, fout):
         I = I.squeeze()
         I = (I/I.max())*ogMax
         p = (p/p.max())*ogMax
-        nrrd.write('./resultimage/input_%d.nrrd'%i,I)
-        nrrd.write('./resultimage/output_%d.nrrd'%i,p)
+        nrrd.write(os.path.join(OUTPUT_PATH,'input_%d.nrrd'  % i),I)
+        nrrd.write(os.path.join(OUTPUT_PATH,'output_%d.nrrd' % i),p)
 
     sys.stdout.flush()
 
@@ -74,12 +49,11 @@ def main(fout):
     mini_batch_loader = MiniBatchLoader(
         TRAINING_DATA_PATH,
         TESTING_DATA_PATH,
-        IMAGE_DIR_PATH,
         CROP_SIZE)
 
     chainer.cuda.get_device_from_id(GPU_ID).use()
 
-    current_state = State.State((TRAIN_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
+    current_state = state.State((TRAIN_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
 
     # load network
     model = Network(N_ACTIONS)

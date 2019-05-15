@@ -1,1 +1,1 @@
-rsync -iarh --progress --exclude 'env/' . brooklyn:/home/ubuntu/pixelRL-master
+rsync -iarh --progress --exclude 'env/' --exclude '.git' --exclude '.DS_Store' --exclude 'data/' . brooklyn:/home/ubuntu/pixelRL-master-2

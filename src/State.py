@@ -47,7 +47,6 @@ class State():
         moved_image = self.image + move[:,np.newaxis,:,:]
 
         self.image = moved_image
-        self.image = np.where(act[:,np.newaxis,:,:]==self.move_range,gaussian,self.image)
 
         self.tensor[:,:self.image.shape[1],:,:,:] = self.image
         self.tensor[:,-16:,:,:,:] = inner_state
