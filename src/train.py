@@ -11,81 +11,116 @@ import os
 from pixelwise_a3c import *
 from config import *
 
-def main(fout):
-    #_/_/_/ load dataset _/_/_/
-    mini_batch_loader = MiniBatchLoader(
-        TRAINING_DATA_PATH,
-        TESTING_DATA_PATH,
-        CROP_SIZE)
+"""
+- Trains the network according to parameters supplied in config
+@param loader - instance of mini_batch_loader to load test data
+@param agent - initialized agent to perform harmonization task
+@param optimizer - initialized optimization object to use for training
+"""
+def train(loader, agent, optimizer):
 
-    chainer.cuda.get_device_from_id(GPU_ID).use()
+    # Set up agent state space
+    current_state = state.State((TRAIN_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE),
+                                 MOVE_RANGE)
 
-    current_state = state.State((TRAIN_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
-
-    # load myfcn model
-    model = Network(N_ACTIONS)
-
-    #_/_/_/ setup _/_/_/
-    optimizer = chainer.optimizers.Adam(alpha=LEARNING_RATE)
-    optimizer.setup(model)
-
-    agent = PixelWiseA3C_InnerState_ConvR(model, optimizer, EPISODE_LEN, GAMMA)
-    agent.model.to_gpu()
-
-    #_/_/_/ training _/_/_/
-
+    # Shuffle order of training data
     train_data_size = MiniBatchLoader.count_paths(TRAINING_DATA_PATH)
     indices = np.random.permutation(train_data_size)
+
     i = 0
     for episode in range(1, N_EPISODES+1):
-        # display current state
         print("episode %d" % episode)
-        fout.write("episode %d\n" % episode)
         sys.stdout.flush()
-        # load images
+
+        # Load batch of images
         r = indices[i:i+TRAIN_BATCH_SIZE]
-        raw_x, raw_y = mini_batch_loader.load_training_data(r)
-        # initialize the current state and reward
+        raw_x, raw_y = loader.load_training_data(r)
+
+        # Initialize current state and reward
         current_state.reset(raw_x)
         reward = np.zeros(raw_x.shape, raw_x.dtype)
         sum_reward = 0
 
+        # Iterate through episode for each image in the batch
         for t in range(0, EPISODE_LEN):
+            # Store copy of previous image for reference
             previous_image = current_state.image.copy()
-            action, inner_state = agent.act_and_train(current_state.tensor, reward)
+
+            # Sample, execute action, and track resulting reward
+            action, inner_state = agent.act_and_train(current_state.tensor,
+                                                      reward)
             current_state.step(action, inner_state)
+
+            # Calculate current reward
             reward = np.square(raw_y - previous_image)*MAX_INTENSITY - np.square(raw_y - current_state.image)*MAX_INTENSITY
 
+            # Track cumulative sum of rewards
             sum_reward += np.mean(reward)*np.power(GAMMA,t)
-        raw_x *= (2**15)-1
-        raw_y *= (2**15)-1
-        output = current_state.image * (2**15)-1
 
+        # Update weights
         agent.stop_episode_and_train(current_state.tensor, reward, True)
         print("train total reward {a}".format(a=sum_reward*MAX_INTENSITY))
-        fout.write("train total reward {a}\n".format(a=sum_reward))
         sys.stdout.flush()
 
+        # Save current weights to disk
         if episode % SNAPSHOT_EPISODES == 0:
             agent.save(SAVE_PATH+str(episode))
 
+        # Reshuffle training image order or get next batch
         if i+TRAIN_BATCH_SIZE >= train_data_size:
             i = 0
             indices = np.random.permutation(train_data_size)
         else:
             i += TRAIN_BATCH_SIZE
 
+        # Account for batch size overflow
         if i+2*TRAIN_BATCH_SIZE >= train_data_size:
             i = train_data_size - TRAIN_BATCH_SIZE
 
+        # Update learning rate
         optimizer.alpha = LEARNING_RATE*((1-episode/N_EPISODES)**0.9)
 
+"""
+- Set up agent, batch loader, optimizer, and GPU links, and begin training
+"""
+def main():
+
+    # Initialize data loader
+    loader = MiniBatchLoader(
+        TRAINING_DATA_PATH,
+        TESTING_DATA_PATH,
+        CROP_SIZE
+    )
+
+    # Set up GPU
+    chainer.cuda.get_device_from_id(GPU_ID).use()
+
+    # Load network
+    model = Network(N_ACTIONS)
+
+    # Initialize optimizer
+    optimizer = chainer.optimizers.Adam(alpha=LEARNING_RATE)
+    optimizer.setup(model)
+
+    # Initialize agent
+    agent = PixelWiseA3C_InnerState_ConvR(model,
+                                          optimizer,
+                                          EPISODE_LEN,
+                                          GAMMA)
+    agent.model.to_gpu()
+
+    # Start training
+    train(loader, agent, optimizer)
+
+"""
+- Entry point for running a training session
+"""
 def trainModel():
     try:
         np.seterr(divide='raise', invalid='raise')
         fout = open('log.txt', "w")
         start = time.time()
-        main(fout)
+        main()
         end = time.time()
         print("{s}[s]".format(s=end - start))
         print("{s}[m]".format(s=(end - start)/60))
