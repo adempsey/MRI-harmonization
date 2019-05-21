@@ -1,61 +1,81 @@
-# Fully Convolutional Network with Multi-Step Reinforcement Learning for Image Processing
-This is the official implementation of the [paper](https://www.hal.t.u-tokyo.ac.jp/~furuta/pub/fcn_rl/fcn_rl.html) in AAAI2019.
-We provide the sample codes for training and testing and pretrained models on Gaussian denoising.
+# Harmonization of Structural MR Images Through Voxelwise Deep Reinforcement Learning
+This is the implementation of the code used in Andrew Dempsey's master's thesis at NYU Tandon School of Engineering.
 
-## Requirements
-- Python 3.5+
-- Chainer 5.0+
-- ChainerRL 0.5+
-- Cupy 5.0+
-- OpenCV 3.4+
+## Setup
+The model environment can be set up using Docker. We recommend using [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) to enable training with GPUs.
 
-You can install the required libraries by the command `pip install -r requirements.txt`.
-We checked this code on cuda-10.0 and cudnn-7.3.1.
+Build the image by running:
+```
+nvidia-docker build -t python:harm .
+```
 
-## Folders
-The folder `denoise` contains the training and test codes and pretrained models without convGRU and reward map convolution (please see Table 2 in [our paper](https://arxiv.org/abs/1811.04323)).
-`denoise_with_convGRU` contains the ones with convGRU, and `denoise_with_convGRU_and_RMC` contains the ones with both convGRU and reward map convolution.
+Enter the Docker environment by running:
+```
+nvidia-docker run -it --rm -v <absolute_path_to_your_data_directory>:/app/data python:harm
+```
 
 ## Usage
 
+### Test with pretrained model
+A set of pre-trained weights are provided in `src/model`. To run the model
+with these weights (or any generated weights from another training session),
+run
+```
+python main.py
+```
+ensuring that `WEIGHT_PATH` in `config.py` points to the `npz` file you wish
+to load.
+
 ### Training
-If you want to train the model without convGRU and reward map convolution, please go to `denoise` and run `train.py`.
+To train the model, run the following:
 ```
-cd denoise
-python train.py
+python main.py -t
+```
+Weights will be saved to the directory specified in the `SAVE_PATH` in `config.py`. Weights are saved after the network runs through the number of
+iterations specified in `SNAPSHOT_EPISODES`.
+
+## Data
+You should create a `data` directory with the following subdirectories:
+- A directory containing input images to use for training
+- A directory containing label images to training
+- A directory containing input images to use for testing
+- A directory, organized by subject, containing affine matrices in `.mat` format, and warp and inverse warp field files in `.nii` format
+- A directory containing atlas images for each subject
+- An empty directory to output images during testing
+
+A sample structure might look like this:
+```
+.
++--atlases
+|  +--subject_1
+|  |  +--subject_1_atlas.nii
+|  ...
++--input
+|  |  +--input_image_1.nii
+|  |  +--input_image_2.nii
+|  |  ...
++--label
+|  |  +--label_image_1.nii
+|  |  +--label_image_2.nii
+|  |  ...
++--test
+|  |  +--test_image_1.nii
+|  |  +--test_image_2.nii
+|  |  ...
++--transforms
+|  +--subject_1
+|  |  +--input_image_1_affine.mat
+|  |  +--input_image_1_warp.nii
+|  |  +--input_image_1_inverse_warp.nii
+|  |  +--label_image_1_affine.mat
+|  |  +--label_image_1_warp.nii
+|  |  +--label_image_1_inverse_warp.nii
+|  |  ...
+|  ...
 ```
 
-### Test with pretrained models
-If you want to test the pretrained model without convGRU and reward map convolution,
-```
-cd denoise
-python test.py
-```
-
-## Note
-Although we used BSD68 training set and [Waterloo exploration database](https://ece.uwaterloo.ca/~k29ma/exploration/) for training in our paper, this sample code contains only BSD68 training set (428 images in `BSD68/gray/train`).
-Therefore, to reproduce our results (Table 2 in [our paper](https://arxiv.org/abs/1811.04323)) by running `train.py`, please download [Waterloo exploration database](https://ece.uwaterloo.ca/~k29ma/exploration/) and add it into training set by yourself.
-
-The pretraind models were trained on both BSD68 training set and [Waterloo exploration database](https://ece.uwaterloo.ca/~k29ma/exploration/), so `test.py` can reproduce our results (Table 2 in [our paper](https://arxiv.org/abs/1811.04323)).
+## Abstract
+Longitudinal analysis of structural magnetic resonance images is often inhibited by changes in scanner hardware, which can introduce differences in contrast, noise, and resolution. The field of image harmonization aims to control for this variability by adjusting images to a consistent baseline while preserving overall structure. Recent advancements in image-based deep reinforcement learning have produced models where independent, pixelwise agents can be trained in parallel to achieve an overall goal. Here, we apply a voxelwise reinforcement learning approach to the harmonization task. During training, each agent learns a policy for selecting elementary transformations to adapt images to a harmonized environment. We train our network to learn the relationship between two scanners, and show that this method can help achieve more consistent performance in image segmentation tasks by quantitatively measuring volume difference and Dice similarity of segmentation volumes.
 
 ## References
-We used the publicly avaliable models of [[Zhang+, CVPR17]](http://openaccess.thecvf.com/content_cvpr_2017/html/Zhang_Learning_Deep_CNN_CVPR_2017_paper.html) as the initial weights of our model except for the convGRU and the last layers. We obtained the weights from [here](https://github.com/cszn/DnCNN) and converted them from MatConvNet format to caffemodel in order to read them with Chainer.
-
-We obtained the BSD68 dataset from
-- [https://www2.eecs.berkeley.edu/Research/Projects/CS/vision/grouping/resources.html](https://www2.eecs.berkeley.edu/Research/Projects/CS/vision/grouping/resources.html),
-and converted the images to gray scale by using the cvtColor function in OpenCV.
-
-Our implementation is based on [a3c.py](https://github.com/chainer/chainerrl/blob/master/chainerrl/agents/a3c.py) in ChainerRL library and the following articles. We would like to thank them.
-- [http://seiya-kumada.blogspot.com/2016/03/fully-convolutional-networks-chainer.html](http://seiya-kumada.blogspot.com/2016/03/fully-convolutional-networks-chainer.html)
-- [https://www.procrasist.com/entry/chainerrl-memo](https://www.procrasist.com/entry/chainerrl-memo)
-
-## Citation
-If you use our code in your research, please cite our paper.
-```
-@inproceedings{aaai_furuta_2019,
-    author={Ryosuke Furuta and Naoto Inoue and Toshihiko Yamasaki},
-    title={Fully Convolutional Network with Multi-Step Reinforcement Learning for Image Processing},
-    booktitle={AAAI Conference on Artificial Intelligence (AAAI)},
-    year={2019}
-}
-```
+This work is based on research conducted in [(Furuta, 2019)](https://github.com/rfuruta/pixelRL).
