@@ -16,11 +16,10 @@ def test(loader, agent, fout):
     sum_psnr     = 0
     sum_reward = 0
     test_data_size = MiniBatchLoader.count_paths(TESTING_DATA_PATH)
-    current_state = state.State((TEST_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
-    for i in range(0, 1, TEST_BATCH_SIZE):
-        raw_x, raw_y, ogMax = loader.load_testing_data(np.array(range(i, i+TEST_BATCH_SIZE)))
-        raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/MAX_INTENSITY
-        current_state.reset(raw_x,raw_n)
+    current_state = state.State((1,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
+    for i in range(0, 1, 1):
+        raw_x, raw_y, ogMax = loader.load_testing_data(np.array(range(i, i+1)))
+        current_state.reset(raw_x)
         reward = np.zeros(raw_x.shape, raw_x.dtype)*MAX_INTENSITY
 
         for t in range(0, EPISODE_LEN):
@@ -63,7 +62,7 @@ def main(fout):
     optimizer.setup(model)
 
     agent = PixelWiseA3C_InnerState_ConvR(model, optimizer, EPISODE_LEN, GAMMA)
-    chainer.serializers.load_npz(SAVE_PATH, agent.model)
+    chainer.serializers.load_npz(WEIGHT_PATH, agent.model)
     agent.act_deterministically = True
     agent.model.to_gpu()
 

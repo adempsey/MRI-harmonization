@@ -37,7 +37,6 @@ def main(fout):
     train_data_size = MiniBatchLoader.count_paths(TRAINING_DATA_PATH)
     indices = np.random.permutation(train_data_size)
     i = 0
-    rewardtrack = []
     for episode in range(1, N_EPISODES+1):
         # display current state
         print("episode %d" % episode)
@@ -46,10 +45,8 @@ def main(fout):
         # load images
         r = indices[i:i+TRAIN_BATCH_SIZE]
         raw_x, raw_y = mini_batch_loader.load_training_data(r)
-        # generate noise
-        raw_n = np.random.normal(MEAN,SIGMA,raw_x.shape).astype(raw_x.dtype)/MAX_INTENSITY
         # initialize the current state and reward
-        current_state.reset(raw_x,raw_n)
+        current_state.reset(raw_x)
         reward = np.zeros(raw_x.shape, raw_x.dtype)
         sum_reward = 0
 
@@ -68,12 +65,6 @@ def main(fout):
         print("train total reward {a}".format(a=sum_reward*MAX_INTENSITY))
         fout.write("train total reward {a}\n".format(a=sum_reward))
         sys.stdout.flush()
-        rewardtrack.append(sum_reward*MAX_INTENSITY)
-
-        if episode % 50 == 0:
-            s = np.array(rewardtrack)
-            print("avg: %f, std_dev: %f" % (np.mean(s), np.var(s)))
-            rewardtrack = []
 
         if episode % SNAPSHOT_EPISODES == 0:
             agent.save(SAVE_PATH+str(episode))

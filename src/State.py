@@ -6,7 +6,7 @@ class State():
         self.image = np.zeros(size,dtype=np.float32)
         self.move_range = move_range
 
-    def reset(self, x, n):
+    def reset(self, x):
         self.image = x
         size = self.image.shape
         prev_state = np.zeros((size[0],16,size[2],size[3],size[4]),dtype=np.float32)
