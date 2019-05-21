@@ -68,11 +68,15 @@ A sample structure might look like this:
 |  |  +--input_image_1_warp.nii
 |  |  +--input_image_1_inverse_warp.nii
 |  |  +--label_image_1_affine.mat
-|  |  +--label_image_1_warp.nii
-|  |  +--label_image_1_inverse_warp.nii
+|  |  +--label_image_1_Warp.nii
+|  |  +--label_image_1_InverseWarp.nii
 |  |  ...
 |  ...
 ```
+
+Transform warp field files should end in `Warp` and `InverseWarp` and be in nifti format. Affine matrices should be in `.mat` format. All transform files
+should have matching names as their corresponding images up to the `Warp` or
+`InverseWarp` suffixes.
 
 ## Abstract
 Longitudinal analysis of structural magnetic resonance images is often inhibited by changes in scanner hardware, which can introduce differences in contrast, noise, and resolution. The field of image harmonization aims to control for this variability by adjusting images to a consistent baseline while preserving overall structure. Recent advancements in image-based deep reinforcement learning have produced models where independent, pixelwise agents can be trained in parallel to achieve an overall goal. Here, we apply a voxelwise reinforcement learning approach to the harmonization task. During training, each agent learns a policy for selecting elementary transformations to adapt images to a harmonized environment. We train our network to learn the relationship between two scanners, and show that this method can help achieve more consistent performance in image segmentation tasks by quantitatively measuring volume difference and Dice similarity of segmentation volumes.

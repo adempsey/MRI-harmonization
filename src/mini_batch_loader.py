@@ -100,32 +100,37 @@ class MiniBatchLoader(object):
 
         return np.array(dst_coord_vox)
 
+    def labelPathFromPath(self, path):
+        fName = os.path.basename(path)
+        subject = fName[3:13]
+        labels = glob(os.path.join(TARGET_DATA_PATH,'*%s*.nii' % subject))
+        labelPath = random.choice(labels)
+
+        return labelPath
+
+    def transformPathsFromPath(self, path):
+        fName = os.path.basename(path)
+
+        # FIXME: this does not generalize to any filename structure
+        # Currently requires format ss_002_S_xxxx_... format, where
+        # subject is the 002_S_xxxx portion
+        subject = fName[3:13]
+        full = os.path.splitext(fName)[0]
+
+        affPath = glob(os.path.join(TRANSFORMATION_DATA_PATH,subject,'*%s*.mat' % full))[0]
+        warpPath = glob(os.path.join(TRANSFORMATION_DATA_PATH,subject,'*%s*[!Inverse]Warp.nii' % full))[0]
+        invWarpPath = glob(os.path.join(TRANSFORMATION_DATA_PATH,subject,'*%s*InverseWarp.nii' % full))[0]
+
+        return affPath, warpPath, invWarpPath
+
+    def atlasPathFromPath(self, path):
+        fName = os.path.basename(path)
+        subject = fName[3:13]
+        return glob(os.path.join(ATLAS_PATH,subject,'*'))[0]
+
     def load_data(self, path_infos, indices, train=False):
         mini_batch_size = len(indices)
         in_channels = 1
-        def labelPathFromPath(path):
-            fName = os.path.basename(path)
-            subject = fName[3:13]
-            labels = glob(os.path.join(TARGET_DATA_PATH,'ss_%s*.nii' % subject))
-            labelPath = random.choice(labels)
-
-            return labelPath
-
-        def transformPathsFromPath(path):
-            fName = os.path.basename(path)
-            subject = fName[3:13]
-            full = fName[:-4]
-
-            affPath = glob(os.path.join(TRANSFORMATION_DATA_PATH,subject,'antsBTP%s*.mat' % full))[0]
-            warpPath = glob(os.path.join(TRANSFORMATION_DATA_PATH,subject,'antsBTP%s*[0-9]Warp.nii' % full))[0]
-            invWarpPath = glob(os.path.join(TRANSFORMATION_DATA_PATH,subject,'antsBTP%s*InverseWarp.nii' % full))[0]
-
-            return affPath, warpPath, invWarpPath
-
-        def atlasPathFromPath(path):
-            fName = os.path.basename(path)
-            subject = fName[3:13]
-            return os.path.join(ATLAS_PATH,subject,'antsBTPtemplate0.nii')
 
         if train == True:
             xs = np.zeros((mini_batch_size,
@@ -141,10 +146,10 @@ class MiniBatchLoader(object):
 
             for i, index in enumerate(indices):
                 path = path_infos[index]
-                labelPath = labelPathFromPath(path)
-                affPath, warpPath, invWarpPath = transformPathsFromPath(path)
-                labelAffPath, labelWarpPath, labelInvWarpPath = transformPathsFromPath(labelPath)
-                atlasPath = atlasPathFromPath(path)
+                labelPath = self.labelPathFromPath(path)
+                affPath, warpPath, invWarpPath = self.transformPathsFromPath(path)
+                labelAffPath, labelWarpPath, labelInvWarpPath = self.transformPathsFromPath(labelPath)
+                atlasPath = self.atlasPathFromPath(path)
 
                 img = np.array(nib.load(path).dataobj)
                 labelImg = np.array(nib.load(labelPath).dataobj)
