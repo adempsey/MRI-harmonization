@@ -1,12 +1,12 @@
 import os
 
-TRAINING_DATA_PATH          = os.path.join('..','data','train')
-TESTING_DATA_PATH           = os.path.join('..','data','test')
-TARGET_DATA_PATH            = os.path.join('..','data','label')
-TRANSFORMATION_DATA_PATH    = os.path.join('..','data','transforms')
-ATLAS_PATH                  = os.path.join('..','data','atlases')
-SAVE_PATH                   = os.path.join('model','weights_')
-OUTPUT_PATH                 = os.path.join('..','data','output')
+TRAINING_DATA_PATH          = os.path.join('data','train')
+TESTING_DATA_PATH           = os.path.join('data','test')
+TARGET_DATA_PATH            = os.path.join('data','label')
+TRANSFORMATION_DATA_PATH    = os.path.join('data','transforms')
+ATLAS_PATH                  = os.path.join('data','atlases')
+SAVE_PATH                   = os.path.join('src', 'model','pretrained_30000','model.npz')
+OUTPUT_PATH                 = os.path.join('data','output')
 
 #_/_/_/ training parameters _/_/_/
 LEARNING_RATE    = 0.001

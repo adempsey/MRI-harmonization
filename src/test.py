@@ -63,7 +63,7 @@ def main(fout):
     optimizer.setup(model)
 
     agent = PixelWiseA3C_InnerState_ConvR(model, optimizer, EPISODE_LEN, GAMMA)
-    chainer.serializers.load_npz('./model/pretrained_30000/model.npz', agent.model)
+    chainer.serializers.load_npz(SAVE_PATH, agent.model)
     agent.act_deterministically = True
     agent.model.to_gpu()
 

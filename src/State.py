@@ -1,6 +1,5 @@
 import numpy as np
 import sys
-import cv2
 
 class State():
     def __init__(self, size, move_range):

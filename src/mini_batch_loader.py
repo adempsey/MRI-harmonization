@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import cv2
 from glob import glob
 import nibabel as nib
 import random

@@ -4,7 +4,6 @@ import chainer.links as L
 import chainer.functions as F
 import numpy as np
 import math
-import cv2
 from chainer.links.caffe import CaffeFunction
 import chainerrl
 from chainerrl.agents import a3c
