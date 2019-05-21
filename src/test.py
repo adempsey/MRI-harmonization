@@ -9,71 +9,104 @@ import chainerrl
 import state
 import os
 from pixelwise_a3c import *
-import nrrd
+import nibabel as nib
 from config import *
 
-def test(loader, agent, fout):
-    sum_psnr     = 0
-    sum_reward = 0
-    test_data_size = MiniBatchLoader.count_paths(TESTING_DATA_PATH)
-    current_state = state.State((1,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
-    for i in range(0, 1, 1):
-        raw_x, raw_y, ogMax = loader.load_testing_data(np.array(range(i, i+1)))
-        current_state.reset(raw_x)
-        reward = np.zeros(raw_x.shape, raw_x.dtype)*MAX_INTENSITY
+"""
+- Normalizes the provided image to intensities between 0 and the given max
+  and creates a suitable output format
+@param img - the image to normalize
+@param maxIntensity - the highest intensity integer for the output image
+@param imgAffine - the affine matrix of the image (pre-harmonization)
+@return - a normalized image in nifti format
+"""
+def normalizedImage(img, maxIntensity, imgAffine):
+    outputImg = np.maximum(0,img)
+    outputImg = np.minimum(1,outputImg)
+    outputImg = outputImg.squeeze()
+    outputImg = (outputImg/outputImg.max())*maxIntensity
+    outputImg = nib.Nifti1Image(outputImg.astype(np.float32), imgAffine)
 
-        for t in range(0, EPISODE_LEN):
-            previous_image = current_state.image.copy()
-            action, inner_state = agent.act(current_state.tensor)
-            current_state.step(action, inner_state)
+    return outputImg
 
-        agent.stop_episode()
+"""
+- Harmonizes all images in the TESTING_DATA_PATH directory and writes the
+  results to OUTPUT_PATH
+@param loader - instance of mini_batch_loader to load test data
+@param agent - initialized agent to perform harmonization task
+"""
+def test(loader, agent):
 
-        I = np.maximum(0,raw_x)
-        I = np.minimum(1,I)
-        p = np.maximum(0,current_state.image)
-        p = np.minimum(1,p)
-        p = p.squeeze()
-        I = I.squeeze()
-        I = (I/I.max())*ogMax
-        p = (p/p.max())*ogMax
-        nrrd.write(os.path.join(OUTPUT_PATH,'input_%d.nrrd'  % i),I)
-        nrrd.write(os.path.join(OUTPUT_PATH,'output_%d.nrrd' % i),p)
+    # Set up agent state space
+    current_state = state.State((1,1,CROP_SIZE,CROP_SIZE),
+                                MOVE_RANGE)
+
+    # Obtain image data from loader
+    raw_x, raw_y, maxIntensity, imgName, imgAffine = loader.load_testing_data()
+
+    # Reset state values to input image intensities
+    current_state.reset(raw_x)
+
+    # Iterate through episode steps
+    for t in range(0, EPISODE_LEN):
+        # Sample and execute action
+        action, inner_state = agent.act(current_state.tensor)
+        current_state.step(action, inner_state)
+
+    # Halt iteration
+    agent.stop_episode()
+
+    # Normalize image and write to disk
+    outputImg = normalizedImage(current_state.image, maxIntensity, imgAffine)
+    nib.save(outputImg,os.path.join(OUTPUT_PATH,'%s_output.nii' % imgName))
 
     sys.stdout.flush()
 
+"""
+- Set up agent, batch loader, optimizer, and GPU links, and begin testing
+"""
+def main():
 
-def main(fout):
-    #_/_/_/ load dataset _/_/_/
+    # Initialize data loader
     mini_batch_loader = MiniBatchLoader(
         TRAINING_DATA_PATH,
         TESTING_DATA_PATH,
-        CROP_SIZE)
+        CROP_SIZE
+    )
 
+    # Set up GPU
     chainer.cuda.get_device_from_id(GPU_ID).use()
 
-    current_state = state.State((TRAIN_BATCH_SIZE,1,CROP_SIZE,CROP_SIZE), MOVE_RANGE)
-
-    # load network
+    # Load network
     model = Network(N_ACTIONS)
 
-    #_/_/_/ setup _/_/_/
+    # Initialize optimizer
     optimizer = chainer.optimizers.Adam(alpha=LEARNING_RATE)
     optimizer.setup(model)
 
-    agent = PixelWiseA3C_InnerState_ConvR(model, optimizer, EPISODE_LEN, GAMMA)
-    chainer.serializers.load_npz(WEIGHT_PATH, agent.model)
+    # Initialize agent
+    agent = PixelWiseA3C_InnerState_ConvR(model,
+                                          optimizer,
+                                          EPISODE_LEN,
+                                          GAMMA)
     agent.act_deterministically = True
+
+    # Load weights
+    chainer.serializers.load_npz(WEIGHT_PATH, agent.model)
     agent.model.to_gpu()
 
-    #_/_/_/ testing _/_/_/
-    test(mini_batch_loader, agent, fout)
+    # Start testing
+    test(mini_batch_loader, agent)
 
+"""
+- Entry point for running a test iteration. Harmonizes all images in the
+TESTING_DATA_PATH directory and writes results to OUTPUT_PATH
+"""
 def testModel():
     try:
         fout = open('testlog.txt', "w")
         start = time.time()
-        main(fout)
+        main()
         end = time.time()
         print("{s}[s]".format(s=end - start))
         print("{s}[m]".format(s=(end - start)/60))

@@ -25,10 +25,10 @@ class MiniBatchLoader(object):
         return glob(os.path.join(txt_path,"*.nii"))
 
     def load_training_data(self, indices):
-        return self.load_data(self.training_path_infos, indices, augment=True)
+        return self.load_data(self.training_path_infos, indices, train=True)
 
-    def load_testing_data(self, indices):
-        return self.load_data(self.testing_path_infos, indices)
+    def load_testing_data(self):
+        return self.load_data(self.testing_path_infos, np.array([0]))
 
     def antsmat2mat(self, mat):
         finalMat = np.zeros((4,4))
@@ -100,7 +100,7 @@ class MiniBatchLoader(object):
 
         return np.array(dst_coord_vox)
 
-    def load_data(self, path_infos, indices, augment=False):
+    def load_data(self, path_infos, indices, train=False):
         mini_batch_size = len(indices)
         in_channels = 1
         def labelPathFromPath(path):
@@ -127,9 +127,17 @@ class MiniBatchLoader(object):
             subject = fName[3:13]
             return os.path.join(ATLAS_PATH,subject,'antsBTPtemplate0.nii')
 
-        if augment:
-            xs = np.zeros((mini_batch_size, in_channels, self.crop_size, self.crop_size, self.crop_size)).astype(np.float32)
-            ys = np.zeros((mini_batch_size, in_channels, self.crop_size, self.crop_size, self.crop_size)).astype(np.float32)
+        if train == True:
+            xs = np.zeros((mini_batch_size,
+                           in_channels,
+                           self.crop_size,
+                           self.crop_size,
+                           self.crop_size)).astype(np.float32)
+            ys = np.zeros((mini_batch_size,
+                           in_channels,
+                           self.crop_size,
+                           self.crop_size,
+                           self.crop_size)).astype(np.float32)
 
             for i, index in enumerate(indices):
                 path = path_infos[index]
@@ -190,23 +198,23 @@ class MiniBatchLoader(object):
                 ys[i, 0, :, :, :] = labelImg.astype(np.float32)
                 return xs, ys
 
-        elif mini_batch_size == 1:
+        else:
             for i, index in enumerate(indices):
                 path = path_infos[index]
 
-                img = np.array(nib.load(path).dataobj)
+                imgNib = nib.load(path)
+                imgAffine = imgNib.affine
+                img = np.array(imgNib.dataobj)
                 if img is None:
                     raise RuntimeError("invalid image: {i}".format(i=path))
 
             img = img.astype(np.float32)
-            ogMax = img.max()
+            maxIntensity = img.max()
 
             x, y, z = img.shape
             xs = np.zeros((mini_batch_size, in_channels, x, y, z)).astype(np.float32)
             xs[0, 0, :, :, :] = (img/img.max()).astype(np.float32)
             ys = None
 
-            return xs, ys, ogMax
-
-        else:
-            raise RuntimeError("mini batch size must be 1 when testing")
+            imgFileName = os.path.splitext(os.path.basename(path))[0]
+            return xs, ys, maxIntensity, imgFileName, imgAffine

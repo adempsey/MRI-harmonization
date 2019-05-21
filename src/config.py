@@ -36,9 +36,6 @@ EPISODE_LEN = 10
 # Reward Discount Factor
 GAMMA = 0.95
 
-# Maximum image intensity
-MAX_INTENSITY = (2**15)-1
-
 # Number of actions available to the agent
 N_ACTIONS = 9
 
@@ -51,6 +48,9 @@ TRAIN_BATCH_SIZE = 16
 
 # Width, height, and depth of training images
 CROP_SIZE = 15
+
+# Maximum image intensity
+MAX_INTENSITY = (2**15)-1
 
 # Number of episodes to train for
 N_EPISODES = 30000

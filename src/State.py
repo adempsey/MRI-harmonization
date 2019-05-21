@@ -18,20 +18,6 @@ class State():
 
     def step(self, act, inner_state):
         move = act.astype(np.float32)
-        # moveLabels = move.copy()
-        #
-        # moveLabels = np.where(move == 5,  "+1", moveLabels)
-        # moveLabels = np.where(move == 6,  "-1", moveLabels)
-        # moveLabels = np.where(move == 7,  "-1000", moveLabels)
-        # moveLabels = np.where(move == 8,  "+1000", moveLabels)
-        # moveLabels = np.where(move == 4,  "+100", moveLabels)
-        # moveLabels = np.where(move == 3,  "+10", moveLabels)
-        # moveLabels = np.where(move == 1, "-10", moveLabels)
-        # moveLabels = np.where(move == 0, "-100", moveLabels)
-        # moveLabels = np.where(move == 2,  "0", moveLabels)
-        #
-        # uni, counts = np.unique(moveLabels, return_counts=True)
-        # print(dict(zip(uni,counts)))
 
         move = np.where(move == 8,  0.01, move)
         move = np.where(move == 7,  -0.01, move)
