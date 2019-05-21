@@ -89,7 +89,7 @@ def main(fout):
 
         optimizer.alpha = LEARNING_RATE*((1-episode/N_EPISODES)**0.9)
 
-if __name__ == '__main__':
+def trainModel():
     try:
         np.seterr(divide='raise', invalid='raise')
         fout = open('log.txt', "w")

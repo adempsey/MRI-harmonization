@@ -70,7 +70,7 @@ def main(fout):
     #_/_/_/ testing _/_/_/
     test(mini_batch_loader, agent, fout)
 
-if __name__ == '__main__':
+def testModel():
     try:
         fout = open('testlog.txt', "w")
         start = time.time()
