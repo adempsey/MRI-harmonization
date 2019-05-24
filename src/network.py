@@ -8,6 +8,9 @@ from chainer.links.caffe import CaffeFunction
 import chainerrl
 from chainerrl.agents import a3c
 
+"""
+Construct network layers (policy output only)
+"""
 class Network_trained(chainer.Chain, a3c.A3CModel):
 
     def __init__(self, n_actions):
@@ -30,7 +33,9 @@ class Network_trained(chainer.Chain, a3c.A3CModel):
             conv7_V=L.Convolution3D( 16, 1, 3, stride=1, pad=1, nobias=False, initialW=None, initial_bias=None),
         )
 
-
+"""
+Helper method to generate a dilated convolutional layer
+"""
 class DilatedConvBlock(chainer.Chain):
 
     def __init__(self, d_factor, weight, bias):
@@ -44,7 +49,9 @@ class DilatedConvBlock(chainer.Chain):
         h = F.relu(self.diconv(x))
         return h
 
-
+"""
+Construct network layers (policy and value)
+"""
 class Network(chainer.Chain, a3c.A3CModel):
 
     def __init__(self, n_actions):
@@ -74,12 +81,16 @@ class Network(chainer.Chain, a3c.A3CModel):
         )
         self.train = True
 
+    """
+    Define network connections
+    """
     def pi_and_v(self, x):
         h = F.relu(self.conv1(x[:,0:1,:,:,:]))
         h = self.diconv2(h)
         h = self.diconv3(h)
         h = self.diconv4(h)
 
+        # GRU / policy output
         h_pi = self.diconv5_pi(h)
         x_t = self.diconv6_pi(h_pi)
         h_t1 = x[:,-16:,:,:]
@@ -89,6 +100,7 @@ class Network(chainer.Chain, a3c.A3CModel):
         h_t = (1-z_t)*h_t1+z_t*h_tilde_t
         pout = self.conv8_pi(h_t)
 
+        # Value output
         h_V = self.diconv5_V(h)
         h_V = self.diconv6_V(h_V)
         vout = self.conv7_V(h_V)
