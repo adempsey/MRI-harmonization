@@ -37,6 +37,7 @@ EPISODE_LEN = 10
 GAMMA = 0.95
 
 # Number of actions available to the agent
+# Action behavior is defined in state.py
 N_ACTIONS = 9
 
 # Number of actions that move the pixel values. e.g., when MOVE_RANGE=3, there are three actions: pixel_value+=1, +=0, -=1.

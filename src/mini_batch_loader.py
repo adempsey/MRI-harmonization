@@ -10,26 +10,59 @@ from config import *
 
 class MiniBatchLoader(object):
 
+    """
+    @param train_path - the path of the directory containing training images
+    @param test_path - the path of the directory containing test data
+    """
     def __init__(self, train_path, test_path, crop_size):
         self.training_path_infos = self.read_paths(train_path)
         self.testing_path_infos = self.read_paths(test_path)
 
         self.crop_size = crop_size
 
+    """
+    - Counts the number of files in a directory (for determining number of
+    training images, etc.)
+    @param path - the file path to search
+    @return - integer representing number of files in directory at path
+    """
     @staticmethod
     def count_paths(path):
         return len([n for n in os.listdir(path) if os.path.splitext(n)[1] == '.nii'])
 
+    """
+    - Returns a list of nifti files in the directory at txt_path
+    @param txt_path - the file path to search
+    @return - list of strings representing nifti files at directory
+    """
     @staticmethod
     def read_paths(txt_path):
         return glob(os.path.join(txt_path,"*.nii"))
 
+    """
+    - Load training images at the provided indices
+    @param indices - numpy array of integers indicating which input images
+    to load (bound from 0 to total number of input images)
+    @return - tuple of numpy matrices, (xs, ys), where xs is the set of input
+    images and ys is the set of target images
+    """
     def load_training_data(self, indices):
         return self.load_data(self.training_path_infos, indices, train=True)
 
+    """
+    - Load all testing images
+    @return - tuple, (xs, maxIntensity, imgFilename, imgAffine), where xs is
+    the set of test images, maxIntensity
+    """
     def load_testing_data(self):
         return self.load_data(self.testing_path_infos, np.array([0]))
 
+    """
+    - Convert an ANTs-style transform into a numpy matrix
+     (see https://github.com/ANTsX/ANTs/wiki/ITK-affine-transform-conversion)
+    @param mat - An ANTs matrix object imported from an affine mat file
+    @return - a numpy matrix representing the transform
+    """
     def antsmat2mat(self, mat):
         finalMat = np.zeros((4,4))
 
@@ -51,12 +84,33 @@ class MiniBatchLoader(object):
 
         return finalMat
 
+    """
+    - Convert a voxel coordinate to world coordinates according to the provided
+    image matrix
+    @param coord - the voxel coordinate to transform
+    @param img - the image containing the voxel coordinate
+    @return - a 3D coordinate in world units
+    """
     def voxel_to_world(self, coord, img):
         return img.TransformIndexToPhysicalPoint(coord)
 
+    """
+    - Convert a world coordinate to voxel coordinates according to the provided
+    image matrix
+    @param coord - the world coordinate to transform
+    @param img - the image containing the world coordinate
+    @return - a 3D coordinate in voxel units
+    """
     def world_to_voxel(self, coord, img):
         return img.TransformPhysicalPointToIndex(coord)
 
+    """
+    - Convert a world coordinate to voxel coordinates according to the provided
+    image matrix
+    @param coord - the world coordinate to transform
+    @param img - the image containing the world coordinate
+    @return - a 3D coordinate in voxel units
+    """
     def transformPoint(self, point, invAff, aff, invWarp, warp, imgX, imgY, atlas):
         # Convert src voxel coordinate indices to world coordinates
         # point = [70,91,158]
@@ -100,14 +154,30 @@ class MiniBatchLoader(object):
 
         return np.array(dst_coord_vox)
 
+    """
+    - Randomly select a target image from the same subject as the image
+    at the path parameter
+    @param path - The path of the input image to search with
+    @return - The path of a corresponding target image
+    """
     def labelPathFromPath(self, path):
         fName = os.path.basename(path)
+
+        # FIXME: this does not generalize to any filename structure
+        # Currently requires format ss_002_S_xxxx_... format, where
+        # subject is the 002_S_xxxx portion
         subject = fName[3:13]
         labels = glob(os.path.join(TARGET_DATA_PATH,'*%s*.nii' % subject))
         labelPath = random.choice(labels)
 
         return labelPath
 
+    """
+    - Locate the filepaths for the atlas transforms associated with an image
+    @param path - The filepath of the image to search with
+    @return - affPath, the path to the affine transform; warpPath, the path
+    to the warp field; invWarpPath, the path to the inverse warp field
+    """
     def transformPathsFromPath(self, path):
         fName = os.path.basename(path)
 
@@ -123,11 +193,29 @@ class MiniBatchLoader(object):
 
         return affPath, warpPath, invWarpPath
 
+    """
+    - Locate the atlas image corresponding to an image from a particular subject
+    @param path - The filepath of the image to search with
+    @return - The path to the atlas image
+    """
     def atlasPathFromPath(self, path):
         fName = os.path.basename(path)
         subject = fName[3:13]
         return glob(os.path.join(ATLAS_PATH,subject,'*'))[0]
 
+    """
+    - Load image data for training or testing. If training, images are cropped
+    to a random 15x15x15 patch.
+    @param path_infos - A list of filepaths to input images
+    @param indices - Which indices in the filepath list to consider for the
+    current batch
+    @param train - Whether or not the data is to be loaded for training or
+    testing
+    @return -
+        if testing: the image, the maximum intensity of the image, the image
+        filename, and the image's affine matrix
+        if training: the batch of images, the batch of target images
+    """
     def load_data(self, path_infos, indices, train=False):
         mini_batch_size = len(indices)
         in_channels = 1
@@ -167,6 +255,8 @@ class MiniBatchLoader(object):
                     raise RuntimeError("invalid image: {i}".format(i=path))
                 x, y, z = img.shape
 
+                # Restrict random cropping to a central location in the image
+                # to avoid training on too much blank space
                 xRange = 20
                 yRange = 70
                 zRange = 70
@@ -180,6 +270,8 @@ class MiniBatchLoader(object):
 
                 img = img[x_offset:x_offset+self.crop_size, y_offset:y_offset+self.crop_size,z_offset:z_offset+self.crop_size]
 
+                # Get a transformed patch of the label image to match
+                # the training image
                 labelImgWarped = np.zeros((self.crop_size,self.crop_size,self.crop_size))
                 for i in range(self.crop_size):
                     for j in range(self.crop_size):
@@ -190,10 +282,11 @@ class MiniBatchLoader(object):
 
                 labelImg = labelImgWarped
 
+                # Normalize images
                 if img.max() > 0 and labelImg.max() > 0:
                     img = img.astype(np.float32)
                     labelImg = labelImg.astype(np.float32)
-                    img = (img / img.max())# * labelImg.max()
+                    img = (img / img.max())
                     labelImg = (labelImg / labelImg.max())
                 else:
                     img = np.zeros(img.shape)
@@ -216,10 +309,10 @@ class MiniBatchLoader(object):
             img = img.astype(np.float32)
             maxIntensity = img.max()
 
+            # Normalize image
             x, y, z = img.shape
             xs = np.zeros((mini_batch_size, in_channels, x, y, z)).astype(np.float32)
             xs[0, 0, :, :, :] = (img/img.max()).astype(np.float32)
-            ys = None
 
             imgFileName = os.path.splitext(os.path.basename(path))[0]
-            return xs, ys, maxIntensity, imgFileName, imgAffine
+            return xs, maxIntensity, imgFileName, imgAffine

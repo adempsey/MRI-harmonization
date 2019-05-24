@@ -42,7 +42,7 @@ def test(loader, agent):
                                 MOVE_RANGE)
 
     # Obtain image data from loader
-    raw_x, raw_y, maxIntensity, imgName, imgAffine = loader.load_testing_data()
+    raw_x, maxIntensity, imgName, imgAffine = loader.load_testing_data()
 
     # Reset state values to input image intensities
     current_state.reset(raw_x)
