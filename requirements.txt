@@ -19,7 +19,7 @@ itk-registration==4.13.2
 itk-segmentation==4.13.2
 nibabel==2.3.3
 numpy==1.16.1
-Pillow==5.4.1
+Pillow==8.2.0
 protobuf==3.6.1
 pyglet==1.3.2
 pynrrd==0.3.6
